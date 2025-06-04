@@ -1,4 +1,4 @@
- 🧩 Lead Management API Platform
+# 🧩 Lead Management API Platform
 
 This project is a full-stack web application for managing marketing leads using a secure, API key–based system. Admins can generate and revoke API keys for clients, who can then integrate with the lead-creation API. The system includes authentication, permissions, and a flexible data structure for custom fields.
 
