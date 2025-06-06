@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import jwt from 'jsonwebtoken'
 
-const register = async (req, res) => {
+const clientRegister = async (req, res) => {
+  
   try {
     const { name, email, password } = req.body;
 
@@ -37,6 +39,69 @@ const register = async (req, res) => {
   }
 };
 
+const clientLogin = async (req, res) => {
+  try {
+    // User is already validated and fetched in validation middleware
+    const user = req.user;
+    
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      data: userResponse
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false, 
+      message: 'Internal server error'
+    });
+  }
+};
+
+const adminLogin = async (req, res) => {
+  try {
+    // User is already validated and fetched in validation middleware
+    const user = req.user;
+
+    
+    // Generate JWT token with admin flag
+    const token = jwt.sign(
+      { 
+        userId: user._id
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin login successful',
+      token,
+      data: userResponse
+    });
+
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}, '-password');
@@ -54,6 +119,8 @@ const getAllUsers = async (req, res) => {
 };
 
 export {
-  register,
-  getAllUsers
+  clientRegister,
+  clientLogin,
+  adminLogin,
+  getAllUsers,
 };
