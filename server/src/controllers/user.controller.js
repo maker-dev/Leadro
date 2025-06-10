@@ -141,6 +141,26 @@ const getAdminProfile = async (req, res) => {
   }
 };
 
+const getAllClients = async (req, res) => {
+  try {
+    // Find all users with client role, excluding password
+    const clients = await User.find({ role: 'client' }).select('-password');
+    
+    res.status(200).json({
+      success: true,
+      count: clients.length,
+      data: clients
+    });
+
+  } catch (error) {
+    console.error('Get all clients error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({});
@@ -160,8 +180,9 @@ const getAllUsers = async (req, res) => {
 export {
   clientRegister,
   clientLogin,
-  adminLogin,
-  getAllUsers,
   getClientProfile,
-  getAdminProfile
+  adminLogin,
+  getAdminProfile,
+  getAllClients,
+  getAllUsers,
 };
