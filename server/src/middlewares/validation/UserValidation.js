@@ -114,8 +114,45 @@ const AdminLoginValidation = [
     })
 ];
 
+// Validation rules for client profile
+const ClientProfileValidation = [
+    body().custom(async (_, { req }) => {
+        if (!req.user || !req.user.userId) {
+            throw new Error('Authentication required');
+        }
+
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        req.user = user;
+
+        return true;
+    })
+];
+
+// Validation rules for admin profile
+const AdminProfileValidation = [
+    body().custom(async (_, { req }) => {
+        if (!req.user || !req.user.userId) {
+            throw new Error('Authentication required');
+        }
+
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        req.user = user;
+        return true;
+    })
+];
+
 export {
     ClientRegisterValidation,
     ClientLoginValidation,
-    AdminLoginValidation
+    AdminLoginValidation,
+    ClientProfileValidation,
+    AdminProfileValidation
 };

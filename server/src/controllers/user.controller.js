@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken'
 
+//Client APIS
+
 const clientRegister = async (req, res) => {
   
   try {
@@ -45,7 +47,7 @@ const clientLogin = async (req, res) => {
     const user = req.user;
     
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -67,6 +69,29 @@ const clientLogin = async (req, res) => {
   }
 };
 
+const getClientProfile = async (req, res) => {
+  try {
+    
+    const user = req.user;
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      data: userResponse
+    });
+
+  } catch (error) {
+    console.error('Get client profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+//Admin APIS
+
 const adminLogin = async (req, res) => {
   try {
     // User is already validated and fetched in validation middleware
@@ -74,13 +99,7 @@ const adminLogin = async (req, res) => {
 
     
     // Generate JWT token with admin flag
-    const token = jwt.sign(
-      { 
-        userId: user._id
-      }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
-    );
+    const token = jwt.sign({ userId: user._id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -102,9 +121,29 @@ const adminLogin = async (req, res) => {
   }
 };
 
+const getAdminProfile = async (req, res) => {
+  try {
+    const user = req.user;
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      data: userResponse
+    });
+
+  } catch (error) {
+    console.error('Get admin profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-password');
+    const users = await User.find({});
     res.json({
       success: true,
       data: users
@@ -123,4 +162,6 @@ export {
   clientLogin,
   adminLogin,
   getAllUsers,
+  getClientProfile,
+  getAdminProfile
 };
