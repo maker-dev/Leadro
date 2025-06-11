@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken'
-import sendEmail from '../utils/emails.js';
+import sendEmail from '../utils/sendEmail.js';
 
 //Client APIS
 
@@ -193,7 +193,7 @@ const resendVerificationEmail = async (req, res) => {
     // Generate new email verification token
     const emailVerificationToken = jwt.sign({ userId: user._id }, process.env.EMAIL_SECRET, { expiresIn: '20h' });
 
-    const emailVerificationUrl = `${process.env.FRONTEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+    const emailVerificationUrl = `${process.env.BACKEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
 
     // Send new verification email
     await sendEmail({
