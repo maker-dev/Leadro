@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken'
+import sendEmail from '../utils/emails.js';
 
 //Client APIS
 
@@ -22,6 +23,18 @@ const clientRegister = async (req, res) => {
       role: 'client' // Set role as client for registration
     });
 
+    // Generate email verification token
+    const emailVerificationToken = jwt.sign({ userId: user._id }, process.env.EMAIL_SECRET, { expiresIn: '20h' });
+
+    const emailVerificationUrl = `${process.env.FRONTEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+
+    //send email verification email
+    await sendEmail({
+      to: email,
+      subject: 'Email Verification',
+      html: `Click <a href="${emailVerificationUrl}">here</a> to verify your email`
+    });
+
     // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
@@ -40,6 +53,34 @@ const clientRegister = async (req, res) => {
     });
   }
 };
+
+const clientVerifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    const decoded = jwt.verify(token, process.env.EMAIL_SECRET);
+    await User.findByIdAndUpdate(decoded.userId, { isEmailVerified: true });
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully'
+    });
+    
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Email verification link has expired. Please request a new one.'
+      });
+    }
+
+    console.error('Email verification error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 
 const clientLogin = async (req, res) => {
   try {
@@ -69,9 +110,11 @@ const clientLogin = async (req, res) => {
   }
 };
 
-const getClientProfile = async (req, res) => {
+
+//Profile API (unified for both client and admin)
+
+const getProfile = async (req, res) => {
   try {
-    
     const user = req.user;
     const userResponse = user.toObject();
     delete userResponse.password;
@@ -82,7 +125,7 @@ const getClientProfile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get client profile error:', error);
+    console.error('Get profile error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -121,26 +164,6 @@ const adminLogin = async (req, res) => {
   }
 };
 
-const getAdminProfile = async (req, res) => {
-  try {
-    const user = req.user;
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.status(200).json({
-      success: true,
-      data: userResponse
-    });
-
-  } catch (error) {
-    console.error('Get admin profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-};
-
 const getAllClients = async (req, res) => {
   try {
     // Find all users with client role, excluding password
@@ -161,15 +184,31 @@ const getAllClients = async (req, res) => {
   }
 };
 
-const getAllUsers = async (req, res) => {
+// Email verification API (unified for both client and admin)
+
+const resendVerificationEmail = async (req, res) => {
   try {
-    const users = await User.find({});
-    res.json({
-      success: true,
-      data: users
+    const user = req.user; // User is now available from validation middleware
+
+    // Generate new email verification token
+    const emailVerificationToken = jwt.sign({ userId: user._id }, process.env.EMAIL_SECRET, { expiresIn: '20h' });
+
+    const emailVerificationUrl = `${process.env.FRONTEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+
+    // Send new verification email
+    await sendEmail({
+      to: user.email,
+      subject: 'Email Verification - New Link',
+      html: `Click <a href="${emailVerificationUrl}">here</a> to verify your email`
     });
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification email has been resent'
+    });
+
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error('Resend verification email error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -180,9 +219,9 @@ const getAllUsers = async (req, res) => {
 export {
   clientRegister,
   clientLogin,
-  getClientProfile,
+  getProfile,
   adminLogin,
-  getAdminProfile,
   getAllClients,
-  getAllUsers,
+  clientVerifyEmail,
+  resendVerificationEmail,
 };

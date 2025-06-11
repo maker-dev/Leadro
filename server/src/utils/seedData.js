@@ -16,6 +16,7 @@ const seedUsers = async () => {
       email: 'anas@example.com',
       password: hashedPassword,
       role: 'admin',
+      isEmailVerified: true,
     });
 
     console.log('User inserted successfully');

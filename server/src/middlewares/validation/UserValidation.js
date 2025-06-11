@@ -77,6 +77,10 @@ const ClientLoginValidation = [
             throw new Error('Invalid email or password'); 
         }
 
+        if (!user.isEmailVerified) {
+            throw new Error('Email not verified');
+        }
+
         req.user = user;
         return true;
     })
@@ -109,31 +113,17 @@ const AdminLoginValidation = [
             throw new Error('Invalid email or password'); 
         }
 
+        if (!user.isEmailVerified) {
+            throw new Error('Email not verified');
+        }
+
         req.user = user;
         return true;
     })
 ];
 
-// Validation rules for client profile
-const ClientProfileValidation = [
-    body().custom(async (_, { req }) => {
-        if (!req.user || !req.user.userId) {
-            throw new Error('Authentication required');
-        }
-
-        const user = await User.findById(req.user.userId);
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        req.user = user;
-
-        return true;
-    })
-];
-
-// Validation rules for admin profile
-const AdminProfileValidation = [
+// Unified validation rules for any user profile
+const ProfileValidation = [
     body().custom(async (_, { req }) => {
         if (!req.user || !req.user.userId) {
             throw new Error('Authentication required');
@@ -147,12 +137,37 @@ const AdminProfileValidation = [
         req.user = user;
         return true;
     })
+];
+
+// Validation rules for resending verification email
+const ResendVerificationEmailValidation = [
+    body('email')
+        .trim()
+        .notEmpty().withMessage('Email is required')
+        .isEmail().withMessage('Please provide a valid email')
+        .normalizeEmail()
+        .custom(async (email, {req}) => {
+            // Check if user exists
+            const user = await User.findOne({ email });
+            if (!user) {
+                throw new Error('No account found with this email');
+            }
+
+            // Check if email is already verified
+            if (user.isEmailVerified) {
+                throw new Error('Email is already verified');
+            }
+            
+            req.user = user;
+            // Add user to request for controller use
+            return true;
+        })
 ];
 
 export {
     ClientRegisterValidation,
     ClientLoginValidation,
     AdminLoginValidation,
-    ClientProfileValidation,
-    AdminProfileValidation
+    ProfileValidation,
+    ResendVerificationEmailValidation
 };

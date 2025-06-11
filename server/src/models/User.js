@@ -22,6 +22,10 @@ const UserSchema = new Schema({
     type: String,
     enum: ['admin', 'client'],
     required: true,
+  },
+  isEmailVerified: {
+    type: Boolean, 
+    default: false,
   }
 }, {
   timestamps: true
