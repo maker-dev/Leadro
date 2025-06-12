@@ -26,7 +26,7 @@ const clientRegister = async (req, res) => {
     // Generate email verification token
     const emailVerificationToken = jwt.sign({ userId: user._id }, process.env.EMAIL_SECRET, { expiresIn: '20h' });
 
-    const emailVerificationUrl = `${process.env.FRONTEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+    const emailVerificationUrl = `${process.env.BACKEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
 
     //send email verification email
     await sendEmail({
