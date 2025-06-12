@@ -143,20 +143,8 @@ const updateLead = async (req, res) => {
 // Delete lead
 const deleteLead = async (req, res) => {
     try {
-        const { id } = req.params;
-
-        // Find lead and verify ownership
-        const lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
-        
-        if (!lead) {
-            return res.status(404).json({
-                success: false,
-                message: 'Lead not found or unauthorized'
-            });
-        }
-
-        // Delete the lead
-        await Lead.findByIdAndDelete(id);
+        // Lead is already validated and attached to request by middleware
+        await req.lead.deleteOne();
 
         res.status(200).json({
             success: true,
@@ -164,12 +152,6 @@ const deleteLead = async (req, res) => {
         });
     } catch (error) {
         console.error('Delete lead error:', error);
-        if (error.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid lead ID format'
-            });
-        }
         res.status(500).json({
             success: false,
             message: 'Internal server error'
