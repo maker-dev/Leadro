@@ -5,6 +5,7 @@ import errorHandler from './middlewares/errorHandler.js'
 import userRoutes from './routes/user.routes.js'
 import leadRoutes from './routes/lead.routes.js'
 import passwordRoutes from './routes/password.routes.js'
+import apikeyRoutes from './routes/apikey.routes.js'
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(morgan('dev'))
 app.use('/api/users', userRoutes); 
 app.use('/api/leads', leadRoutes);
 app.use('/api/password', passwordRoutes);
+app.use('/api/apikey', apikeyRoutes);
 
 //error handler
 app.use(errorHandler);
