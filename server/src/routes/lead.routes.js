@@ -128,39 +128,57 @@ router.post('/', verifyToken, verifyRole(['client']), CreateLeadValidation, vali
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   description: Number of leads found
+ *                   example: 5
  *                 data:
  *                   type: array
+ *                   description: Array of leads
  *                   items:
  *                     type: object
  *                     properties:
  *                       _id:
  *                         type: string
+ *                         description: Lead ID
  *                         example: "60d21b4667d0d8992e610c85"
  *                       email:
  *                         type: string
+ *                         description: Email of the lead
  *                         example: "lead@example.com"
  *                       name:
  *                         type: string
+ *                         description: Name of the lead
  *                         example: "John Doe"
  *                       phone:
  *                         type: string
+ *                         description: Phone number of the lead
  *                         example: "+1234567890"
  *                       source:
  *                         type: string
+ *                         description: Source of the lead
  *                         example: "Website"
  *                       status:
  *                         type: string
  *                         enum: [new, contacted, converted, lost]
+ *                         description: Current status of the lead
  *                         example: "new"
  *                       message:
  *                         type: string
+ *                         description: Message from the lead
  *                         example: "Interested in your services"
+ *                       extraFields:
+ *                         type: object
+ *                         description: Additional custom fields for the lead
+ *                         additionalProperties: true
  *                       createdAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the lead was created
  *                       updatedAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the lead was last updated
  *       401:
  *         description: Unauthorized
  *       403:
@@ -331,11 +349,15 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *         name: search
  *         schema:
  *           type: string
+ *           minLength: 2
+ *           maxLength: 100
  *         description: Search term for name, email, or phone
  *       - in: query
  *         name: source
  *         schema:
  *           type: string
+ *           minLength: 2
+ *           maxLength: 50
  *         description: Filter by lead source
  *       - in: query
  *         name: status
@@ -343,18 +365,6 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *           type: string
  *           enum: [new, contacted, converted, lost]
  *         description: Filter by lead status
- *       - in: query
- *         name: startDate
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter leads created after this date
- *       - in: query
- *         name: endDate
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter leads created before this date
  *     responses:
  *       200:
  *         description: Leads filtered successfully
@@ -366,41 +376,75 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   description: Number of leads found
+ *                   example: 5
  *                 data:
  *                   type: array
+ *                   description: Array of filtered leads
  *                   items:
  *                     type: object
  *                     properties:
  *                       _id:
  *                         type: string
+ *                         description: Lead ID
  *                         example: "60d21b4667d0d8992e610c85"
  *                       email:
  *                         type: string
+ *                         description: Email of the lead
  *                         example: "lead@example.com"
  *                       name:
  *                         type: string
+ *                         description: Name of the lead
  *                         example: "John Doe"
  *                       phone:
  *                         type: string
+ *                         description: Phone number of the lead
  *                         example: "+1234567890"
  *                       source:
  *                         type: string
+ *                         description: Source of the lead
  *                         example: "Website"
  *                       status:
  *                         type: string
  *                         enum: [new, contacted, converted, lost]
+ *                         description: Current status of the lead
  *                         example: "new"
  *                       message:
  *                         type: string
+ *                         description: Message from the lead
  *                         example: "Interested in your services"
+ *                       extraFields:
+ *                         type: object
+ *                         description: Additional custom fields for the lead
+ *                         additionalProperties: true
  *                       createdAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the lead was created
  *                       updatedAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the lead was last updated
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Search term must be between 2 and 100 characters"]
  *       401:
  *         description: Unauthorized
  *       403:
@@ -418,6 +462,46 @@ router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 100
+ *         description: Search term for lead name, email, or phone
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [new, contacted, converted, lost]
+ *         description: Filter by lead status
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created after this date (ISO 8601 format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created before this date (ISO 8601 format)
+ *       - in: query
+ *         name: clientName
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *         description: Filter by client name
  *     responses:
  *       200:
  *         description: Leads retrieved successfully
@@ -431,60 +515,95 @@ router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation
  *                   example: true
  *                 count:
  *                   type: integer
+ *                   description: Number of client groups
  *                   example: 2
  *                 data:
  *                   type: array
+ *                   description: Array of client groups with their leads
  *                   items:
  *                     type: object
  *                     properties:
  *                       _id:
  *                         type: string
+ *                         description: Client ID
  *                         example: "60d21b4667d0d8992e610c85"
  *                       clientName:
  *                         type: string
+ *                         description: Name of the client
  *                         example: "John Doe"
  *                       clientEmail:
  *                         type: string
+ *                         description: Email of the client
  *                         example: "john@example.com"
  *                       totalLeads:
  *                         type: integer
+ *                         description: Total number of leads for this client
  *                         example: 5
  *                       leads:
  *                         type: array
+ *                         description: Array of leads belonging to this client
  *                         items:
  *                           type: object
  *                           properties:
  *                             _id:
  *                               type: string
+ *                               description: Lead ID
  *                               example: "60d21b4667d0d8992e610c85"
  *                             name:
  *                               type: string
+ *                               description: Name of the lead
  *                               example: "Lead Name"
  *                             email:
  *                               type: string
+ *                               description: Email of the lead
  *                               example: "lead@example.com"
  *                             phone:
  *                               type: string
+ *                               description: Phone number of the lead
  *                               example: "+1234567890"
  *                             source:
  *                               type: string
+ *                               description: Source of the lead
  *                               example: "Website"
  *                             status:
  *                               type: string
  *                               enum: [new, contacted, converted, lost]
+ *                               description: Current status of the lead
  *                               example: "new"
  *                             message:
  *                               type: string
+ *                               description: Message from the lead
  *                               example: "Interested in services"
  *                             extraFields:
  *                               type: object
+ *                               description: Additional custom fields for the lead
  *                               additionalProperties: true
  *                             createdAt:
  *                               type: string
  *                               format: date-time
+ *                               description: When the lead was created
  *                             updatedAt:
  *                               type: string
  *                               format: date-time
+ *                               description: When the lead was last updated
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Search term must be between 2 and 100 characters"]
  *       401:
  *         description: Unauthorized
  *       403:

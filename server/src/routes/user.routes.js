@@ -37,18 +37,22 @@ const router = express.Router();
  *                 minLength: 3
  *                 maxLength: 50
  *                 pattern: '^[A-Za-z\\s]+$'
+ *                 description: Full name (letters and spaces only)
  *                 example: "John Doe"
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: Email address for the account
  *                 example: "john@example.com"
  *               password:
  *                 type: string
  *                 minLength: 8
  *                 pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d@$!%*?&]'
+ *                 description: Password (must contain at least one uppercase letter, one lowercase letter, and one number)
  *                 example: "Password123"
  *               confirmPassword:
  *                 type: string
+ *                 description: Password confirmation (must match password)
  *                 example: "Password123"
  *     responses:
  *       201:
@@ -69,27 +73,50 @@ const router = express.Router();
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: User ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     name:
  *                       type: string
+ *                       description: Full name of the user
  *                       example: "John Doe"
  *                     email:
  *                       type: string
+ *                       description: Email address of the user
  *                       example: "john@example.com"
  *                     role:
  *                       type: string
+ *                       description: User role
  *                       example: "client"
  *                     isEmailVerified:
  *                       type: boolean
+ *                       description: Whether the email has been verified
  *                       example: false
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the account was created
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the account was last updated
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid email format"]
  *       500:
  *         description: Server error
  */
@@ -107,7 +134,7 @@ router.post('/client/register', ClientRegisterValidation, validate, clientRegist
  *         required: true
  *         schema:
  *           type: string
- *         description: Email verification token
+ *         description: Email verification token received via email
  *     responses:
  *       200:
  *         description: Email verified successfully
@@ -127,9 +154,11 @@ router.post('/client/register', ClientRegisterValidation, validate, clientRegist
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: User ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     isEmailVerified:
  *                       type: boolean
+ *                       description: Whether the email has been verified
  *                       example: true
  *       401:
  *         description: Token expired
@@ -156,6 +185,7 @@ router.get('/client/verify-email', clientVerifyEmail);
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: Email address of the unverified account
  *                 example: "john@example.com"
  *     responses:
  *       200:
@@ -173,6 +203,22 @@ router.get('/client/verify-email', clientVerifyEmail);
  *                   example: "Verification email sent successfully"
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid email format"]
  *       500:
  *         description: Server error
  */
@@ -197,9 +243,11 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: Email address of the account
  *                 example: "john@example.com"
  *               password:
  *                 type: string
+ *                 description: Account password
  *                 example: "Password123"
  *     responses:
  *       200:
@@ -220,27 +268,49 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *                   properties:
  *                     token:
  *                       type: string
+ *                       description: JWT authentication token
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                     user:
  *                       type: object
  *                       properties:
  *                         _id:
  *                           type: string
+ *                           description: User ID
  *                           example: "60d21b4667d0d8992e610c85"
  *                         name:
  *                           type: string
+ *                           description: Full name of the user
  *                           example: "John Doe"
  *                         email:
  *                           type: string
+ *                           description: Email address of the user
  *                           example: "john@example.com"
  *                         role:
  *                           type: string
+ *                           description: User role
  *                           example: "client"
  *                         isEmailVerified:
  *                           type: boolean
+ *                           description: Whether the email has been verified
  *                           example: true
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid email format"]
  *       401:
  *         description: Invalid credentials
  *       500:
@@ -272,25 +342,32 @@ router.post('/client/login', ClientLoginValidation, validate, clientLogin);
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: User ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     name:
  *                       type: string
+ *                       description: Full name of the user
  *                       example: "John Doe"
  *                     email:
  *                       type: string
+ *                       description: Email address of the user
  *                       example: "john@example.com"
  *                     role:
  *                       type: string
+ *                       description: User role
  *                       example: "client"
  *                     isEmailVerified:
  *                       type: boolean
+ *                       description: Whether the email has been verified
  *                       example: true
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the account was created
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the account was last updated
  *       401:
  *         description: Unauthorized
  *       500:
@@ -317,9 +394,11 @@ router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: Admin email address
  *                 example: "admin@example.com"
  *               password:
  *                 type: string
+ *                 description: Admin password
  *                 example: "AdminPass123"
  *     responses:
  *       200:
@@ -340,24 +419,45 @@ router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
  *                   properties:
  *                     token:
  *                       type: string
+ *                       description: JWT authentication token
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                     user:
  *                       type: object
  *                       properties:
  *                         _id:
  *                           type: string
+ *                           description: User ID
  *                           example: "60d21b4667d0d8992e610c85"
  *                         name:
  *                           type: string
+ *                           description: Full name of the admin
  *                           example: "Admin User"
  *                         email:
  *                           type: string
+ *                           description: Email address of the admin
  *                           example: "admin@example.com"
  *                         role:
  *                           type: string
+ *                           description: User role
  *                           example: "admin"
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid email format"]
  *       401:
  *         description: Invalid credentials
  *       500:
@@ -386,30 +486,38 @@ router.post('/admin/login', AdminLoginValidation, validate, adminLogin);
  *                   example: true
  *                 data:
  *                   type: array
+ *                   description: Array of client users
  *                   items:
  *                     type: object
  *                     properties:
  *                       _id:
  *                         type: string
+ *                         description: User ID
  *                         example: "60d21b4667d0d8992e610c85"
  *                       name:
  *                         type: string
+ *                         description: Full name of the client
  *                         example: "John Doe"
  *                       email:
  *                         type: string
+ *                         description: Email address of the client
  *                         example: "john@example.com"
  *                       role:
  *                         type: string
+ *                         description: User role
  *                         example: "client"
  *                       isEmailVerified:
  *                         type: boolean
+ *                         description: Whether the email has been verified
  *                         example: true
  *                       createdAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the account was created
  *                       updatedAt:
  *                         type: string
  *                         format: date-time
+ *                         description: When the account was last updated
  *       401:
  *         description: Unauthorized
  *       403:

@@ -204,11 +204,48 @@ const filterLeads = async (req, res) => {
 // Get all leads grouped by clients (Admin only)
 const getAllLeadsGroupedByClients = async (req, res) => {
     try {
-        // Aggregate leads by client
+        const { search, source, status, startDate, endDate, clientName } = req.query;
+
+        // Build match stage for filtering
+        const matchStage = {};
+
+        // Add search condition if search parameter exists
+        if (search) {
+            matchStage.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Add source filter if provided
+        if (source) {
+            matchStage.source = { $regex: source, $options: 'i' };
+        }
+
+        // Add status filter if provided
+        if (status) {
+            matchStage.status = { $regex: status, $options: 'i' };
+        }
+
+        // Add date range filter if provided
+        if (startDate || endDate) {
+            matchStage.createdAt = {};
+            if (startDate) {
+                matchStage.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                matchStage.createdAt.$lte = new Date(endDate);
+            }
+        }
+
+        // Aggregate leads by client with filtering
         const leadsByClient = await Lead.aggregate([
+            // Apply filters first
+            { $match: matchStage },
             {
                 $lookup: {
-                    from: 'users', // Collection name for users
+                    from: 'users',
                     localField: 'ownerId',
                     foreignField: '_id',
                     as: 'client'
@@ -217,6 +254,12 @@ const getAllLeadsGroupedByClients = async (req, res) => {
             {
                 $unwind: '$client'
             },
+            // Add client name filter if provided
+            ...(clientName ? [{
+                $match: {
+                    'client.name': { $regex: clientName, $options: 'i' }
+                }
+            }] : []),
             {
                 $group: {
                     _id: '$ownerId',
@@ -240,7 +283,7 @@ const getAllLeadsGroupedByClients = async (req, res) => {
                 }
             },
             {
-                $sort: { clientName: 1 } // Sort by client name
+                $sort: { clientName: 1 }
             }
         ]);
 
@@ -251,6 +294,13 @@ const getAllLeadsGroupedByClients = async (req, res) => {
         });
     } catch (error) {
         console.error('Get all leads grouped by clients error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
         res.status(500).json({
             success: false,
             message: 'Internal server error'
