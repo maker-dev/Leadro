@@ -30,6 +30,7 @@ const router = express.Router();
  *               email:
  *                 type: string
  *                 format: email
+ *                 description: Email address of the account
  *                 example: "user@example.com"
  *     responses:
  *       200:
@@ -47,6 +48,22 @@ const router = express.Router();
  *                   example: "Password reset email sent successfully"
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid email format"]
  *       404:
  *         description: No account found with this email
  *       500:
@@ -66,7 +83,7 @@ router.post('/forgot-password', forgotPasswordValidation, validate, forgotPasswo
  *         required: true
  *         schema:
  *           type: string
- *         description: Password reset token
+ *         description: Password reset token received via email
  *     requestBody:
  *       required: true
  *       content:
@@ -81,9 +98,11 @@ router.post('/forgot-password', forgotPasswordValidation, validate, forgotPasswo
  *                 type: string
  *                 minLength: 8
  *                 pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d@$!%*?&]'
+ *                 description: New password (must contain at least one uppercase letter, one lowercase letter, and one number)
  *                 example: "NewPassword123"
  *               confirmPassword:
  *                 type: string
+ *                 description: Password confirmation (must match password)
  *                 example: "NewPassword123"
  *     responses:
  *       200:
@@ -101,6 +120,22 @@ router.post('/forgot-password', forgotPasswordValidation, validate, forgotPasswo
  *                   example: "Password reset successful"
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Passwords do not match"]
  *       401:
  *         description: Invalid or expired token
  *       500:

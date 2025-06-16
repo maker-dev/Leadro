@@ -41,6 +41,7 @@ const router = express.Router();
  *               expiresAt:
  *                 type: string
  *                 format: date
+ *                 description: Expiration date for the API key (ISO 8601 format)
  *                 example: "2024-12-31"
  *     responses:
  *       201:
@@ -61,28 +62,51 @@ const router = express.Router();
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: API key ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     clientId:
  *                       type: string
+ *                       description: ID of the client who owns this API key
  *                       example: "60d21b4667d0d8992e610c85"
  *                     key:
  *                       type: string
+ *                       description: The generated API key
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                     expiresAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key expires
  *                       example: "2024-12-31T23:59:59.999Z"
  *                     revoked:
  *                       type: boolean
+ *                       description: Whether the API key is revoked
  *                       example: false
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was created
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was last updated
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Expiration date is required"]
  *       401:
  *         description: Unauthorized
  *       403:
@@ -126,26 +150,51 @@ router.post('/:clientId', verifyToken, verifyRole(['admin']), generateApiKeyVali
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: API key ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     clientId:
  *                       type: string
+ *                       description: ID of the client who owns this API key
  *                       example: "60d21b4667d0d8992e610c85"
  *                     key:
  *                       type: string
+ *                       description: The API key
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                     expiresAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key expires
  *                       example: "2024-12-31T23:59:59.999Z"
  *                     revoked:
  *                       type: boolean
+ *                       description: Whether the API key is revoked
  *                       example: true
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was created
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was last updated
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Invalid API key ID format"]
  *       401:
  *         description: Unauthorized
  *       403:
@@ -184,6 +233,7 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *               expiresAt:
  *                 type: string
  *                 format: date
+ *                 description: New expiration date for the API key (ISO 8601 format)
  *                 example: "2024-12-31"
  *     responses:
  *       200:
@@ -204,28 +254,51 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *                   properties:
  *                     _id:
  *                       type: string
+ *                       description: API key ID
  *                       example: "60d21b4667d0d8992e610c85"
  *                     clientId:
  *                       type: string
+ *                       description: ID of the client who owns this API key
  *                       example: "60d21b4667d0d8992e610c85"
  *                     key:
  *                       type: string
+ *                       description: The newly generated API key
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                     expiresAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key expires
  *                       example: "2024-12-31T23:59:59.999Z"
  *                     revoked:
  *                       type: boolean
+ *                       description: Whether the API key is revoked
  *                       example: false
  *                     createdAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was created
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
+ *                       description: When the API key was last updated
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Expiration date is required"]
  *       401:
  *         description: Unauthorized
  *       403:
