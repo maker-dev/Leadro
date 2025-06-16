@@ -159,9 +159,52 @@ const deleteLead = async (req, res) => {
     }
 };
 
+// Filter/Search leads
+const filterLeads = async (req, res) => {
+    try {
+        const { search, source, status } = req.query;
+        const query = { ownerId: req.user.userId };
+
+        // Add search condition if search parameter exists
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Add source filter if provided
+        if (source) {
+            query.source = { $regex: source, $options: 'i' };
+        }
+
+        // Add status filter if provided
+        if (status) {
+            query.status = { $regex: status, $options: 'i' };
+        }
+
+        const leads = await Lead.find(query)
+            .sort({ createdAt: -1 }); // Sort by newest first
+
+        res.status(200).json({
+            success: true,
+            count: leads.length,
+            data: leads
+        });
+    } catch (error) {
+        console.error('Filter leads error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 export {
     createLead,
     getClientLeads,
     updateLead,
-    deleteLead
+    deleteLead,
+    filterLeads
 };

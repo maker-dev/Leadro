@@ -1,4 +1,4 @@
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import Lead from '../../models/Lead.js';
 
 const CreateLeadValidation = [
@@ -173,8 +173,32 @@ const DeleteLeadValidation = [
         })
 ];
 
+const FilterLeadsValidation = [
+    // Validate search parameter
+    query('search')
+        .optional()
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Search term must be between 2 and 100 characters'),
+
+    // Validate source parameter
+    query('source')
+        .optional()
+        .trim()
+        .isLength({ min: 2, max: 50 })
+        .withMessage('Source must be between 2 and 50 characters'),
+
+    // Validate status parameter
+    query('status')
+        .optional()
+        .trim()
+        .isIn(['new', 'contacted', 'converted', 'lost'])
+        .withMessage('Status must be one of: new, contacted, converted, lost')
+];
+
 export {
     CreateLeadValidation,
     UpdateLeadValidation,
-    DeleteLeadValidation
+    DeleteLeadValidation,
+    FilterLeadsValidation
 };
