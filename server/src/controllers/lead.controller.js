@@ -201,10 +201,68 @@ const filterLeads = async (req, res) => {
     }
 };
 
+// Get all leads grouped by clients (Admin only)
+const getAllLeadsGroupedByClients = async (req, res) => {
+    try {
+        // Aggregate leads by client
+        const leadsByClient = await Lead.aggregate([
+            {
+                $lookup: {
+                    from: 'users', // Collection name for users
+                    localField: 'ownerId',
+                    foreignField: '_id',
+                    as: 'client'
+                }
+            },
+            {
+                $unwind: '$client'
+            },
+            {
+                $group: {
+                    _id: '$ownerId',
+                    clientName: { $first: '$client.name' },
+                    clientEmail: { $first: '$client.email' },
+                    totalLeads: { $sum: 1 },
+                    leads: {
+                        $push: {
+                            _id: '$_id',
+                            name: '$name',
+                            email: '$email',
+                            phone: '$phone',
+                            source: '$source',
+                            status: '$status',
+                            message: '$message',
+                            extraFields: '$extraFields',
+                            createdAt: '$createdAt',
+                            updatedAt: '$updatedAt'
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { clientName: 1 } // Sort by client name
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            count: leadsByClient.length,
+            data: leadsByClient
+        });
+    } catch (error) {
+        console.error('Get all leads grouped by clients error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 export {
     createLead,
     getClientLeads,
     updateLead,
     deleteLead,
-    filterLeads
+    filterLeads,
+    getAllLeadsGroupedByClients
 };

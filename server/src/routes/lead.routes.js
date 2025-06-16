@@ -1,5 +1,5 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
@@ -409,5 +409,89 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *         description: Server error
  */
 router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
+
+/**
+ * @swagger
+ * /api/leads/admin/grouped:
+ *   get:
+ *     summary: Get all leads grouped by clients (Admin only)
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Leads retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 2
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       clientName:
+ *                         type: string
+ *                         example: "John Doe"
+ *                       clientEmail:
+ *                         type: string
+ *                         example: "john@example.com"
+ *                       totalLeads:
+ *                         type: integer
+ *                         example: 5
+ *                       leads:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             _id:
+ *                               type: string
+ *                               example: "60d21b4667d0d8992e610c85"
+ *                             name:
+ *                               type: string
+ *                               example: "Lead Name"
+ *                             email:
+ *                               type: string
+ *                               example: "lead@example.com"
+ *                             phone:
+ *                               type: string
+ *                               example: "+1234567890"
+ *                             source:
+ *                               type: string
+ *                               example: "Website"
+ *                             status:
+ *                               type: string
+ *                               enum: [new, contacted, converted, lost]
+ *                               example: "new"
+ *                             message:
+ *                               type: string
+ *                               example: "Interested in services"
+ *                             extraFields:
+ *                               type: object
+ *                               additionalProperties: true
+ *                             createdAt:
+ *                               type: string
+ *                               format: date-time
+ *                             updatedAt:
+ *                               type: string
+ *                               format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
+router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGroupedByClients);
 
 export default router;
