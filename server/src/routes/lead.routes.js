@@ -1,9 +1,9 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
-import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation } from '../middlewares/validation/LeadValidation.js';
+import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation } from '../middlewares/validation/LeadValidation.js';
 
 const router = express.Router();
 
@@ -493,5 +493,109 @@ router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation
  *         description: Server error
  */
 router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGroupedByClients);
+
+/**
+ * @swagger
+ * /api/leads/admin/clients/{clientId}/leads:
+ *   get:
+ *     summary: Get all leads for a specific client (Admin only)
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the client
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for name, email, or phone
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [new, contacted, converted, lost]
+ *         description: Filter by lead status
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created after this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created before this date
+ *     responses:
+ *       200:
+ *         description: Leads retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       name:
+ *                         type: string
+ *                         example: "Lead Name"
+ *                       email:
+ *                         type: string
+ *                         example: "lead@example.com"
+ *                       phone:
+ *                         type: string
+ *                         example: "+1234567890"
+ *                       source:
+ *                         type: string
+ *                         example: "Website"
+ *                       status:
+ *                         type: string
+ *                         enum: [new, contacted, converted, lost]
+ *                         example: "new"
+ *                       message:
+ *                         type: string
+ *                         example: "Interested in services"
+ *                       extraFields:
+ *                         type: object
+ *                         additionalProperties: true
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
+router.get('/admin/clients/:clientId/leads', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
 
 export default router;

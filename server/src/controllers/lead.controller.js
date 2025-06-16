@@ -258,11 +258,74 @@ const getAllLeadsGroupedByClients = async (req, res) => {
     }
 };
 
+// Get leads for a specific client (Admin only)
+const getClientLeadsById = async (req, res) => {
+    try {
+        const { clientId } = req.params;
+        const { search, source, status, startDate, endDate } = req.query;
+
+        // Build query
+        const query = { ownerId: clientId };
+
+        // Add search condition if search parameter exists
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Add source filter if provided
+        if (source) {
+            query.source = { $regex: source, $options: 'i' };
+        }
+
+        // Add status filter if provided
+        if (status) {
+            query.status = { $regex: status, $options: 'i' };
+        }
+
+        // Add date range filter if provided
+        if (startDate || endDate) {
+            query.createdAt = {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
+        }
+
+        const leads = await Lead.find(query)
+            .sort({ createdAt: -1 }); // Sort by newest first
+
+        res.status(200).json({
+            success: true,
+            count: leads.length,
+            data: leads
+        });
+    } catch (error) {
+        console.error('Get client leads by ID error:', error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid client ID format'
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 export {
     createLead,
     getClientLeads,
     updateLead,
     deleteLead,
     filterLeads,
-    getAllLeadsGroupedByClients
+    getAllLeadsGroupedByClients,
+    getClientLeadsById
 };

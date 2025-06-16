@@ -196,9 +196,60 @@ const FilterLeadsValidation = [
         .withMessage('Status must be one of: new, contacted, converted, lost')
 ];
 
+const GetClientLeadsByIdValidation = [
+    // Validate client ID parameter
+    param('clientId')
+        .trim()
+        .notEmpty()
+        .withMessage('Client ID is required')
+        .isMongoId()
+        .withMessage('Invalid client ID format'),
+
+    // Validate search parameter
+    query('search')
+        .optional()
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Search term must be between 2 and 100 characters'),
+
+    // Validate source parameter
+    query('source')
+        .optional()
+        .trim()
+        .isLength({ min: 2, max: 50 })
+        .withMessage('Source must be between 2 and 50 characters'),
+
+    // Validate status parameter
+    query('status')
+        .optional()
+        .trim()
+        .isIn(['new', 'contacted', 'converted', 'lost'])
+        .withMessage('Status must be one of: new, contacted, converted, lost'),
+
+    // Validate date parameters
+    query('startDate')
+        .optional()
+        .trim()
+        .isISO8601()
+        .withMessage('Start date must be a valid ISO 8601 date'),
+
+    query('endDate')
+        .optional()
+        .trim()
+        .isISO8601()
+        .withMessage('End date must be a valid ISO 8601 date')
+        .custom((endDate, { req }) => {
+            if (endDate && req.query.startDate && new Date(endDate) < new Date(req.query.startDate)) {
+                throw new Error('End date must be after start date');
+            }
+            return true;
+        })
+];
+
 export {
     CreateLeadValidation,
     UpdateLeadValidation,
     DeleteLeadValidation,
-    FilterLeadsValidation
+    FilterLeadsValidation,
+    GetClientLeadsByIdValidation
 };
