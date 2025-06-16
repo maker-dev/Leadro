@@ -1,9 +1,9 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
-import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation } from '../middlewares/validation/LeadValidation.js';
+import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation } from '../middlewares/validation/LeadValidation.js';
 
 const router = express.Router();
 
@@ -181,5 +181,59 @@ router.put('/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, va
  *         description: Server error
  */
 router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation, validate, deleteLead);
+
+/**
+ * @swagger
+ * /api/leads/filter:
+ *   get:
+ *     summary: Filter and search leads
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for name, email, or phone
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [new, contacted, converted, lost]
+ *         description: Filter by lead status
+ *     responses:
+ *       200:
+ *         description: Leads filtered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Client access required
+ *       500:
+ *         description: Server error
+ */
+router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
 
 export default router;
