@@ -45,6 +45,42 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: API key generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "API key generated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     clientId:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     key:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-12-31T23:59:59.999Z"
+ *                     revoked:
+ *                       type: boolean
+ *                       example: false
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Validation error
  *       401:
@@ -74,6 +110,42 @@ router.post('/:clientId', verifyToken, verifyRole(['admin']), generateApiKeyVali
  *     responses:
  *       200:
  *         description: API key status toggled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "API key revoked successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     clientId:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     key:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-12-31T23:59:59.999Z"
+ *                     revoked:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       401:
  *         description: Unauthorized
  *       403:
@@ -116,6 +188,42 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *     responses:
  *       200:
  *         description: API key regenerated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "API key regenerated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     clientId:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     key:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-12-31T23:59:59.999Z"
+ *                     revoked:
+ *                       type: boolean
+ *                       example: false
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Validation error
  *       401:

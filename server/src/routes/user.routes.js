@@ -53,6 +53,41 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Client registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Client registered successfully. Please check your email for verification."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "john@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: false
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Validation error
  *       500:
@@ -76,6 +111,26 @@ router.post('/client/register', ClientRegisterValidation, validate, clientRegist
  *     responses:
  *       200:
  *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Email verified successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: true
  *       401:
  *         description: Token expired
  *       500:
@@ -105,6 +160,17 @@ router.get('/client/verify-email', clientVerifyEmail);
  *     responses:
  *       200:
  *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Verification email sent successfully"
  *       400:
  *         description: Validation error
  *       500:
@@ -138,6 +204,41 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                           example: "60d21b4667d0d8992e610c85"
+ *                         name:
+ *                           type: string
+ *                           example: "John Doe"
+ *                         email:
+ *                           type: string
+ *                           example: "john@example.com"
+ *                         role:
+ *                           type: string
+ *                           example: "client"
+ *                         isEmailVerified:
+ *                           type: boolean
+ *                           example: true
  *       400:
  *         description: Validation error
  *       401:
@@ -158,6 +259,38 @@ router.post('/client/login', ClientLoginValidation, validate, clientLogin);
  *     responses:
  *       200:
  *         description: Profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "john@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       401:
  *         description: Unauthorized
  *       500:
@@ -191,6 +324,38 @@ router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                           example: "60d21b4667d0d8992e610c85"
+ *                         name:
+ *                           type: string
+ *                           example: "Admin User"
+ *                         email:
+ *                           type: string
+ *                           example: "admin@example.com"
+ *                         role:
+ *                           type: string
+ *                           example: "admin"
  *       400:
  *         description: Validation error
  *       401:
@@ -211,6 +376,40 @@ router.post('/admin/login', AdminLoginValidation, validate, adminLogin);
  *     responses:
  *       200:
  *         description: Clients retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       name:
+ *                         type: string
+ *                         example: "John Doe"
+ *                       email:
+ *                         type: string
+ *                         example: "john@example.com"
+ *                       role:
+ *                         type: string
+ *                         example: "client"
+ *                       isEmailVerified:
+ *                         type: boolean
+ *                         example: true
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
  *       401:
  *         description: Unauthorized
  *       403:

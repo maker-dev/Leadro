@@ -56,6 +56,48 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Lead created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     email:
+ *                       type: string
+ *                       example: "lead@example.com"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     phone:
+ *                       type: string
+ *                       example: "+1234567890"
+ *                     source:
+ *                       type: string
+ *                       example: "Website"
+ *                     status:
+ *                       type: string
+ *                       enum: [new, contacted, converted, lost]
+ *                       example: "new"
+ *                     message:
+ *                       type: string
+ *                       example: "Interested in your services"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Validation error
  *       401:
@@ -78,6 +120,47 @@ router.post('/', verifyToken, verifyRole(['client']), CreateLeadValidation, vali
  *     responses:
  *       200:
  *         description: Leads retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       email:
+ *                         type: string
+ *                         example: "lead@example.com"
+ *                       name:
+ *                         type: string
+ *                         example: "John Doe"
+ *                       phone:
+ *                         type: string
+ *                         example: "+1234567890"
+ *                       source:
+ *                         type: string
+ *                         example: "Website"
+ *                       status:
+ *                         type: string
+ *                         enum: [new, contacted, converted, lost]
+ *                         example: "new"
+ *                       message:
+ *                         type: string
+ *                         example: "Interested in your services"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
  *       401:
  *         description: Unauthorized
  *       403:
@@ -138,6 +221,48 @@ router.get('/', verifyToken, verifyRole(['client']), getClientLeads);
  *     responses:
  *       200:
  *         description: Lead updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     email:
+ *                       type: string
+ *                       example: "updated@example.com"
+ *                     name:
+ *                       type: string
+ *                       example: "Updated Name"
+ *                     phone:
+ *                       type: string
+ *                       example: "+1987654321"
+ *                     source:
+ *                       type: string
+ *                       example: "Referral"
+ *                     status:
+ *                       type: string
+ *                       enum: [new, contacted, converted, lost]
+ *                       example: "contacted"
+ *                     message:
+ *                       type: string
+ *                       example: "Updated message"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
  *       400:
  *         description: Validation error
  *       401:
@@ -169,6 +294,17 @@ router.put('/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, va
  *     responses:
  *       200:
  *         description: Lead deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead deleted successfully"
  *       400:
  *         description: Validation error
  *       401:
@@ -207,6 +343,18 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *           type: string
  *           enum: [new, contacted, converted, lost]
  *         description: Filter by lead status
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created after this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created before this date
  *     responses:
  *       200:
  *         description: Leads filtered successfully
@@ -218,13 +366,39 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *                 success:
  *                   type: boolean
  *                   example: true
- *                 count:
- *                   type: integer
- *                   example: 5
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Lead'
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       email:
+ *                         type: string
+ *                         example: "lead@example.com"
+ *                       name:
+ *                         type: string
+ *                         example: "John Doe"
+ *                       phone:
+ *                         type: string
+ *                         example: "+1234567890"
+ *                       source:
+ *                         type: string
+ *                         example: "Website"
+ *                       status:
+ *                         type: string
+ *                         enum: [new, contacted, converted, lost]
+ *                         example: "new"
+ *                       message:
+ *                         type: string
+ *                         example: "Interested in your services"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
  *       400:
  *         description: Validation error
  *       401:

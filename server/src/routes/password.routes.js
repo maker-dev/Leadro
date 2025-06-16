@@ -34,6 +34,17 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Password reset email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset email sent successfully"
  *       400:
  *         description: Validation error
  *       404:
@@ -77,6 +88,17 @@ router.post('/forgot-password', forgotPasswordValidation, validate, forgotPasswo
  *     responses:
  *       200:
  *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successful"
  *       400:
  *         description: Validation error
  *       401:
