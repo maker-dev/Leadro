@@ -1,6 +1,7 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
+import verifyPublicApisToken from '../middlewares/verifyPublicApisToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
 import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation } from '../middlewares/validation/LeadValidation.js';
@@ -716,5 +717,7 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
  *         description: Server error
  */
 router.get('/admin/clients/:clientId/leads', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
+
+router.post("/webhook", verifyPublicApisToken, CreateLeadValidation, validate, createLeadFromWebhook);
 
 export default router;
