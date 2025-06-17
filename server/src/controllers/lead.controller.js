@@ -370,6 +370,44 @@ const getClientLeadsById = async (req, res) => {
     }
 };
 
+// Create lead via public API
+const createLeadFromWebhook = async (req, res) => {
+    try {
+        const { name, email, phone, source, message, ...extraFields } = req.body;
+
+
+        const lead = await Lead.create({
+            ownerId: req.apiKey.clientId, // Use the client ID from the API key
+            name,
+            email,
+            phone,
+            source, // Default source to 'API' if not provided
+            message,
+            extraFields: new Map(Object.entries(extraFields)) // Convert extra fields to Map
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Lead created successfully',
+            data: lead
+        });
+
+    } catch (error) {
+        console.error('Create public lead error:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: Object.values(error.errors).map(err => err.message)
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 export {
     createLead,
     getClientLeads,
@@ -377,5 +415,6 @@ export {
     deleteLead,
     filterLeads,
     getAllLeadsGroupedByClients,
-    getClientLeadsById
+    getClientLeadsById,
+    createLeadFromWebhook
 };

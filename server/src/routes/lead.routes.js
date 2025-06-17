@@ -1,8 +1,10 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
+import checkApiKeyOrRateLimitByIP from '../middlewares/rateLimit/checkApiKeyOrRateLimitByIP.js';
+import apiKeyRateLimiter from '../middlewares/rateLimit/rateLimitByApiKey.js';
 import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation } from '../middlewares/validation/LeadValidation.js';
 
 const router = express.Router();
@@ -53,6 +55,14 @@ const router = express.Router();
  *                 type: string
  *                 maxLength: 1000
  *                 example: "Interested in your services"
+ *               extraFields:
+ *                 type: object
+ *                 description: Additional custom fields for the lead
+ *                 additionalProperties: true
+ *                 example:
+ *                   company: "Acme Inc"
+ *                   jobTitle: "CEO"
+ *                   industry: "Technology"
  *     responses:
  *       201:
  *         description: Lead created successfully
@@ -92,6 +102,14 @@ const router = express.Router();
  *                     message:
  *                       type: string
  *                       example: "Interested in your services"
+ *                     extraFields:
+ *                       type: object
+ *                       description: Additional custom fields for the lead
+ *                       additionalProperties: true
+ *                       example:
+ *                         company: "Acme Inc"
+ *                         jobTitle: "CEO"
+ *                         industry: "Technology"
  *                     createdAt:
  *                       type: string
  *                       format: date-time
@@ -716,5 +734,154 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
  *         description: Server error
  */
 router.get('/admin/clients/:clientId/leads', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
+
+/**
+ * @swagger
+ * /api/leads/webhook:
+ *   post:
+ *     summary: Create a new lead through webhook (Public API)
+ *     tags: [Leads]
+ *     security:
+ *       - apiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "lead@example.com"
+ *               name:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 50
+ *                 example: "John Doe"
+ *               phone:
+ *                 type: string
+ *                 pattern: '^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$'
+ *                 example: "+1234567890"
+ *               source:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: "Website"
+ *               message:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: "Interested in your services"
+ *               extraFields:
+ *                 type: object
+ *                 description: Additional custom fields for the lead
+ *                 additionalProperties: true
+ *                 example:
+ *                   company: "Acme Inc"
+ *                   jobTitle: "CEO"
+ *                   industry: "Technology"
+ *     responses:
+ *       201:
+ *         description: Lead created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     email:
+ *                       type: string
+ *                       example: "lead@example.com"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     phone:
+ *                       type: string
+ *                       example: "+1234567890"
+ *                     source:
+ *                       type: string
+ *                       example: "Website"
+ *                     status:
+ *                       type: string
+ *                       enum: [new, contacted, converted, lost]
+ *                       example: "new"
+ *                     message:
+ *                       type: string
+ *                       example: "Interested in your services"
+ *                     extraFields:
+ *                       type: object
+ *                       description: Additional custom fields for the lead
+ *                       additionalProperties: true
+ *                       example:
+ *                         company: "Acme Inc"
+ *                         jobTitle: "CEO"
+ *                         industry: "Technology"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Email is required"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "API key is required"
+ *       429:
+ *         description: Too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Too many requests, please try again later"
+ *       500:
+ *         description: Server error
+ */
+router.post("/webhook", checkApiKeyOrRateLimitByIP, apiKeyRateLimiter, CreateLeadValidation, validate, createLeadFromWebhook);
 
 export default router;
