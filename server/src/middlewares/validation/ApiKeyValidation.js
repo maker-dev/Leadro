@@ -136,8 +136,61 @@ const regenerateApiKeyValidation = [
         })
 ];
 
+const getClientApiKeyValidation = [
+    body().custom(async (_, { req }) => {
+        // Use userId from JWT token (req.user) instead of params
+        const userId = req.user.userId;
+
+        // Find active API key for the user
+        const apiKey = await ApiKey.findOne({
+            clientId: userId,
+            revoked: false,
+            expiresAt: { $gt: new Date() }
+        }).lean();
+
+        if (!apiKey) {
+            throw new Error('No active API key found for this user');
+        }
+
+        req.clientApiKey = apiKey;
+        return true;
+    })
+];
+
+const getApiKeyByClientIdValidation = [
+    param('clientId')
+        .trim()
+        .notEmpty()
+        .withMessage('Client ID is required')
+        .custom(async (clientId, { req }) => {
+            try {
+                // Verify the client exists and is verified
+                const client = await User.findOne({
+                    _id: clientId,
+                    role: 'client',
+                    isEmailVerified: true
+                });
+
+                if (!client) {
+                    throw new Error('Client not found or not verified');
+                }
+
+                // Store client in request for controller use
+                req.targetClient = client;
+                return true;
+            } catch (error) {
+                if (error.name === 'CastError') {
+                    throw new Error('Invalid client ID format');
+                }
+                throw error;
+            }
+        })
+];
+
 export {
     generateApiKeyValidation,
     toggleApiKeyStatusValidation,
-    regenerateApiKeyValidation
-}
+    regenerateApiKeyValidation,
+    getClientApiKeyValidation,
+    getApiKeyByClientIdValidation
+};

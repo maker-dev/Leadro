@@ -18,7 +18,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/leads:
+ * /api/leads/client:
  *   post:
  *     summary: Create a new lead
  *     tags: [Leads]
@@ -125,11 +125,11 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/', verifyToken, verifyRole(['client']), CreateLeadValidation, validate, createLead);
+router.post('/client', verifyToken, verifyRole(['client']), CreateLeadValidation, validate, createLead);
 
 /**
  * @swagger
- * /api/leads:
+ * /api/leads/client:
  *   get:
  *     summary: Get all leads for the authenticated client
  *     tags: [Leads]
@@ -204,11 +204,11 @@ router.post('/', verifyToken, verifyRole(['client']), CreateLeadValidation, vali
  *       500:
  *         description: Server error
  */
-router.get('/', verifyToken, verifyRole(['client']), getClientLeads);
+router.get('/client', verifyToken, verifyRole(['client']), getClientLeads);
 
 /**
  * @swagger
- * /api/leads/{id}:
+ * /api/leads/client/{id}:
  *   put:
  *     summary: Update a lead
  *     tags: [Leads]
@@ -310,11 +310,11 @@ router.get('/', verifyToken, verifyRole(['client']), getClientLeads);
  *       500:
  *         description: Server error
  */
-router.put('/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, validate, updateLead);
+router.put('/client/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, validate, updateLead);
 
 /**
  * @swagger
- * /api/leads/{id}:
+ * /api/leads/client/{id}:
  *   delete:
  *     summary: Delete a lead
  *     tags: [Leads]
@@ -352,7 +352,7 @@ router.put('/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, va
  *       500:
  *         description: Server error
  */
-router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation, validate, deleteLead);
+router.delete('/client/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation, validate, deleteLead);
 
 /**
  * @swagger
@@ -470,7 +470,7 @@ router.delete('/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation,
  *       500:
  *         description: Server error
  */
-router.get('/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
+router.get('/client/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
 
 /**
  * @swagger
@@ -633,7 +633,7 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
 
 /**
  * @swagger
- * /api/leads/admin/clients/{clientId}/leads:
+ * /api/leads/admin/clients/{clientId}:
  *   get:
  *     summary: Get all leads for a specific client (Admin only)
  *     tags: [Leads]
@@ -733,11 +733,11 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
  *       500:
  *         description: Server error
  */
-router.get('/admin/clients/:clientId/leads', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
+router.get('/admin/clients/:clientId', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
 
 /**
  * @swagger
- * /api/leads/webhook:
+ * /api/leads/client/webhook:
  *   post:
  *     summary: Create a new lead through webhook (Public API)
  *     tags: [Leads]
@@ -882,6 +882,6 @@ router.get('/admin/clients/:clientId/leads', verifyToken, verifyRole(['admin']),
  *       500:
  *         description: Server error
  */
-router.post("/webhook", checkApiKeyOrRateLimitByIP, apiKeyRateLimiter, CreateLeadValidation, validate, createLeadFromWebhook);
+router.post("/client/webhook", checkApiKeyOrRateLimitByIP, apiKeyRateLimiter, CreateLeadValidation, validate, createLeadFromWebhook);
 
 export default router;
