@@ -16,7 +16,7 @@ const ClientAccessSchema = new Schema({
   permissions: {
     type: [String],
     required: true,
-    enum: ['read', 'edit', 'write', 'delete'],
+    enum: ['read', 'update', 'delete'],
     default: ['read']
   }
 }, {

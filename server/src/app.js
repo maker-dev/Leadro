@@ -8,6 +8,7 @@ import userRoutes from './routes/user.routes.js'
 import leadRoutes from './routes/lead.routes.js'
 import passwordRoutes from './routes/password.routes.js'
 import apikeyRoutes from './routes/apikey.routes.js'
+import clientAccessRoutes from './routes/clientaccess.routes.js'
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/apikey', apikeyRoutes);
+app.use('/api/client-access', clientAccessRoutes);
 
 //error handler
 app.use(errorHandler);
