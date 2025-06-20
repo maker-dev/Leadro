@@ -1,11 +1,11 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook, getLeadsSharedWithMe, getLeadsSharedByClient } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
 import checkApiKeyOrRateLimitByIP from '../middlewares/rateLimit/checkApiKeyOrRateLimitByIP.js';
 import apiKeyRateLimiter from '../middlewares/rateLimit/rateLimitByApiKey.js';
-import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation } from '../middlewares/validation/LeadValidation.js';
+import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation, GetLeadsSharedByClientValidation } from '../middlewares/validation/LeadValidation.js';
 
 const router = express.Router();
 
@@ -471,6 +471,101 @@ router.delete('/client/:id', verifyToken, verifyRole(['client']), DeleteLeadVali
  *         description: Server error
  */
 router.get('/client/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
+
+/**
+ * @swagger
+ * /api/leads/client/shared-with-me:
+ *   get:
+ *     summary: Get all leads shared with the authenticated client
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Leads shared with the client, grouped by owner
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 2
+ *                 data:
+ *                   type: array
+ *                   description: Array of groups by owner
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       owner:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: "60d21b4667d0d8992e610c85"
+ *                           name:
+ *                             type: string
+ *                             example: "Alice"
+ *                           email:
+ *                             type: string
+ *                             example: "alice@example.com"
+ *                       leads:
+ *                         type: array
+ *                         items:
+ *                           $ref: '#/components/schemas/Lead'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/client/shared-with-me', verifyToken, verifyRole(['client']), getLeadsSharedWithMe);
+
+/**
+ * @swagger
+ * /api/leads/client/shared-by-client/{clientAccessId}:
+ *   get:
+ *     summary: Get all leads for a specific client (owner) if shared with the authenticated client
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientAccessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The _id of the ClientAccess sharing relationship
+ *     responses:
+ *       200:
+ *         description: Leads for the specified client (owner) if shared with the authenticated client
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Lead'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - You do not have access to this client's leads
+ *       404:
+ *         description: ClientAccess not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/client/shared-by-client/:clientAccessId', verifyToken, verifyRole(['client']), GetLeadsSharedByClientValidation, validate, getLeadsSharedByClient);
 
 /**
  * @swagger

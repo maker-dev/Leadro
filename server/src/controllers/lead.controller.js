@@ -1,5 +1,8 @@
 import Lead from '../models/Lead.js';
+import ClientAccess from '../models/ClientAccess.js';
+import User from '../models/User.js';
 
+/* CLIENT API */
 
 // Create new lead
 const createLead = async (req, res) => {
@@ -51,6 +54,91 @@ const getClientLeads = async (req, res) => {
         });
     } catch (error) {
         console.error('Get client leads error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Get all leads that are being shared with the current client (not their own leads)
+const getLeadsSharedWithMe = async (req, res) => {
+    try {
+        // Find all ClientAccess records where the current user is sharedWithId and has 'read' permission
+        const sharedAccesses = await ClientAccess.find({
+            sharedWithId: req.user.userId,
+            permissions: { $in: ['read'] }
+        });
+
+        // Collect all ownerIds who have shared with this user (exclude self)
+        const sharedOwnerIds = sharedAccesses
+            .map(access => access.ownerId.toString())
+            .filter(ownerId => ownerId !== req.user.userId);
+
+        if (sharedOwnerIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                count: 0,
+                data: []
+            });
+        }
+
+        // Get leads where ownerId is in the set (exclude current user's own leads)
+        const leads = await Lead.find({ ownerId: { $in: sharedOwnerIds } })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Get owner info for each ownerId
+        const owners = await User.find({ _id: { $in: sharedOwnerIds } }, 'name email').lean();
+        const ownerMap = {};
+        owners.forEach(owner => {
+            ownerMap[owner._id.toString()] = owner;
+        });
+
+        // Group leads by owner
+        const grouped = {};
+        leads.forEach(lead => {
+            const ownerId = lead.ownerId.toString();
+            if (!grouped[ownerId]) {
+                grouped[ownerId] = {
+                    owner: ownerMap[ownerId] || { _id: ownerId, name: '', email: '' },
+                    leads: []
+                };
+            }
+            grouped[ownerId].leads.push(lead);
+        });
+
+        res.status(200).json({
+            success: true,
+            count: leads.length,
+            data: Object.values(grouped)
+        });
+    } catch (error) {
+        console.error('Get leads shared with me error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Get all leads for a certain client, if shared with the current user, using ClientAccess _id
+const getLeadsSharedByClient = async (req, res) => {
+    try {
+                    
+        const access = req.access;
+
+        // Get all leads for the owner of this access
+        const leads = await Lead.find({ ownerId: access.ownerId })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: leads.length,
+            data: leads
+        });
+    } catch (error) {
+        console.error('Get leads shared by client error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -200,6 +288,8 @@ const filterLeads = async (req, res) => {
         });
     }
 };
+
+/* ADMIN API */
 
 // Get all leads grouped by clients (Admin only)
 const getAllLeadsGroupedByClients = async (req, res) => {
@@ -370,6 +460,8 @@ const getClientLeadsById = async (req, res) => {
     }
 };
 
+/* PUBLIC API */
+
 // Create lead via public API
 const createLeadFromWebhook = async (req, res) => {
     try {
@@ -408,13 +500,17 @@ const createLeadFromWebhook = async (req, res) => {
     }
 };
 
+
+
 export {
     createLead,
     getClientLeads,
+    getLeadsSharedWithMe,
     updateLead,
     deleteLead,
     filterLeads,
     getAllLeadsGroupedByClients,
     getClientLeadsById,
-    createLeadFromWebhook
+    createLeadFromWebhook,
+    getLeadsSharedByClient
 };

@@ -1,5 +1,6 @@
 import { body, param, query } from 'express-validator';
 import Lead from '../../models/Lead.js';
+import ClientAccess from '../../models/ClientAccess.js';
 
 const CreateLeadValidation = [
     // Required fields
@@ -295,11 +296,33 @@ const GetAllLeadsGroupedByClientsValidation = [
         .withMessage('Client name must be between 2 and 50 characters')
 ];
 
+const GetLeadsSharedByClientValidation = [
+    param('clientAccessId')
+        .trim()
+        .notEmpty()
+        .withMessage('ClientAccess ID is required')
+        .isMongoId()
+        .withMessage('Invalid ClientAccess ID format')
+        .custom(async (clientAccessId, { req }) => {
+            const access = await ClientAccess.findOne({
+                _id: clientAccessId,
+                sharedWithId: req.user.userId,
+                permissions: { $in: ['read'] }
+            });
+            if (!access) {
+                throw new Error('You do not have access to this client\'s leads.');
+            }
+            req.access = access;
+            return true;
+        })
+];
+
 export {
     CreateLeadValidation,
     UpdateLeadValidation,
     DeleteLeadValidation,
     FilterLeadsValidation,
     GetClientLeadsByIdValidation,
-    GetAllLeadsGroupedByClientsValidation
+    GetAllLeadsGroupedByClientsValidation,
+    GetLeadsSharedByClientValidation
 };
