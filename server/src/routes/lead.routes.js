@@ -1,11 +1,11 @@
 import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook, getLeadsSharedWithMe, getLeadsSharedByClient } from '../controllers/lead.controller.js';
+import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook, getLeadsSharedWithMe, getLeadsSharedByClient, updateSharedLead, deleteSharedLead } from '../controllers/lead.controller.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
 import validate from '../middlewares/validate.js';
 import checkApiKeyOrRateLimitByIP from '../middlewares/rateLimit/checkApiKeyOrRateLimitByIP.js';
 import apiKeyRateLimiter from '../middlewares/rateLimit/rateLimitByApiKey.js';
-import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation, GetLeadsSharedByClientValidation } from '../middlewares/validation/LeadValidation.js';
+import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation, GetLeadsSharedByClientValidation, UpdateSharedLeadValidation, DeleteSharedLeadValidation } from '../middlewares/validation/LeadValidation.js';
 
 const router = express.Router();
 
@@ -15,6 +15,8 @@ const router = express.Router();
  *   name: Leads
  *   description: Lead management endpoints
  */
+
+//CLIENT API
 
 /**
  * @swagger
@@ -569,6 +571,123 @@ router.get('/client/shared-by-client/:clientAccessId', verifyToken, verifyRole([
 
 /**
  * @swagger
+ * /api/leads/client/shared-lead/{leadId}:
+ *   put:
+ *     summary: Update a shared lead (with permission)
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: leadId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the lead to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "updated@example.com"
+ *               name:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 50
+ *                 example: "Updated Name"
+ *               phone:
+ *                 type: string
+ *                 example: "+1987654321"
+ *               source:
+ *                 type: string
+ *                 example: "Referral"
+ *               status:
+ *                 type: string
+ *                 enum: [new, contacted, converted, lost]
+ *                 example: "contacted"
+ *               message:
+ *                 type: string
+ *                 example: "Updated message"
+ *     responses:
+ *       200:
+ *         description: Lead updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead updated successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - You do not have update permission for this lead
+ *       404:
+ *         description: Lead not found
+ *       500:
+ *         description: Server error
+ */
+router.put('/client/shared-lead/:leadId', verifyToken, verifyRole(['client']), UpdateSharedLeadValidation, validate, updateSharedLead);
+
+/**
+ * @swagger
+ * /api/leads/client/shared-lead/{leadId}:
+ *   delete:
+ *     summary: Delete a shared lead (with permission)
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: leadId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the lead to delete
+ *     responses:
+ *       200:
+ *         description: Lead deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Lead deleted successfully"
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - You do not have delete permission for this lead
+ *       404:
+ *         description: Lead not found
+ *       500:
+ *         description: Server error
+ */
+router.delete('/client/shared-lead/:leadId', verifyToken, verifyRole(['client']), DeleteSharedLeadValidation, validate, deleteSharedLead);
+
+//ADMIN API
+
+/**
+ * @swagger
  * /api/leads/admin/grouped:
  *   get:
  *     summary: Get all leads grouped by clients (Admin only)
@@ -829,6 +948,8 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
  *         description: Server error
  */
 router.get('/admin/clients/:clientId', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
+
+//PUBLIC API
 
 /**
  * @swagger
