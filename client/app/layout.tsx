@@ -40,7 +40,7 @@ export default function RootLayout({
         className={twMerge(
           inter.variable,
           jetbrainsMono.variable,
-          "antialiased min-h-screen scroll-smooth"
+          "antialiased scroll-smooth"
         )}
       >
         {children}
