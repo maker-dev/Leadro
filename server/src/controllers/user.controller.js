@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken'
 import sendEmail from '../utils/sendEmail.js';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 //Client APIS
 
 const clientRegister = async (req, res) => {
@@ -87,14 +89,22 @@ const clientLogin = async (req, res) => {
     // User is already validated and fetched in validation middleware
     const user = req.user;
     
-    // Generate JWT token
+    // Generate JWT tokens
     const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ userId: user._id, role: user.role }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
 
     // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.status(200).json({
+    res
+    .cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 
+    })
+    .json({
       success: true,
       message: 'Login successful',
       token,
@@ -105,6 +115,46 @@ const clientLogin = async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false, 
+      message: 'Internal server error'
+    });
+  }
+};
+
+const refreshToken = async (req, res) => {
+  try {
+
+    const refreshToken = req.cookies['refreshToken'];
+
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: 'Refresh token not found. Please log in.' });
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, decoded) => {
+    
+      if (err) {
+        res.clearCookie('refreshToken');
+        return res.status(403).json({ success: false, message: 'Invalid or expired refresh token. Please log in again.' });
+      }
+
+      const user = await User.findById(decoded.userId);
+      
+      if (!user) {
+        res.clearCookie('refreshToken');
+        return res.status(403).json({ success: false, message: 'User not found.' });
+      }
+
+      const newAccessToken = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+      res.status(200).json({
+        success: true,
+        message: 'Token refreshed successfully',
+        token: newAccessToken
+      });
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({
+      success: false,
       message: 'Internal server error'
     });
   }
@@ -143,12 +193,21 @@ const adminLogin = async (req, res) => {
     
     // Generate JWT token with admin flag
     const token = jwt.sign({ userId: user._id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ userId: user._id, role: user.role }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
+
 
     // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.status(200).json({
+    res
+    .cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 
+    })
+    .json({
       success: true,
       message: 'Admin login successful',
       token,
@@ -219,6 +278,7 @@ const resendVerificationEmail = async (req, res) => {
 export {
   clientRegister,
   clientLogin,
+  refreshToken,
   getProfile,
   adminLogin,
   getAllClients,

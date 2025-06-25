@@ -1,15 +1,17 @@
 import express from 'express';
-import cors from 'cors'
-import morgan from 'morgan'
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import errorHandler from './middlewares/errorHandler.js'
-import userRoutes from './routes/user.routes.js'
-import leadRoutes from './routes/lead.routes.js'
-import passwordRoutes from './routes/password.routes.js'
-import apikeyRoutes from './routes/apikey.routes.js'
-import clientAccessRoutes from './routes/clientaccess.routes.js'
+import errorHandler from './middlewares/errorHandler.js';
+import userRoutes from './routes/user.routes.js';
+import leadRoutes from './routes/lead.routes.js';
+import passwordRoutes from './routes/password.routes.js';
+import apikeyRoutes from './routes/apikey.routes.js';
+import clientAccessRoutes from './routes/clientaccess.routes.js';
 
+//variables
 const app = express();
 
 // Swagger configuration
@@ -51,9 +53,12 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 
 //middlewares
-app.use(cors());
+app.use(cors({
+    credentials: true
+}));
 app.use(express.json());
-app.use(morgan('dev'))
+app.use(cookieParser());
+app.use(morgan('dev'));
 
 // Swagger UI setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
