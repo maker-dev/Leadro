@@ -2,7 +2,7 @@ import express from 'express'
 import validate from '../middlewares/validate.js';
 import verifyToken from '../middlewares/verifyToken.js';
 import verifyRole from '../middlewares/verifyRole.js';
-import { clientRegister, clientLogin, adminLogin, getProfile, getAllClients, clientVerifyEmail, resendVerificationEmail } from '../controllers/user.controller.js';
+import { clientRegister, clientLogin, adminLogin, getProfile, getAllClients, clientVerifyEmail, resendVerificationEmail, refreshToken } from '../controllers/user.controller.js';
 import { ClientRegisterValidation, ClientLoginValidation, AdminLoginValidation, ProfileValidation, ResendVerificationEmailValidation } from '../middlewares/validation/UserValidation.js';
 
 const router = express.Router();
@@ -251,7 +251,12 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *                 example: "Password123"
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login successful. An `httpOnly` cookie named `refreshToken` is set.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: "refreshToken=...; Path=/; HttpOnly; Secure; SameSite=Strict"
  *         content:
  *           application/json:
  *             schema:
@@ -377,6 +382,62 @@ router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
 
 /**
  * @swagger
+ * /api/users/refresh-token:
+ *   post:
+ *     summary: Refresh JWT access token
+ *     tags: [Users]
+ *     description: Obtains a new JWT access token by providing a valid refresh token. The refresh token should be sent as an `httpOnly` cookie named 'refreshToken'.
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Token refreshed successfully"
+ *                 token:
+ *                   type: string
+ *                   description: A new JWT access token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       401:
+ *         description: Unauthorized. Refresh token is missing.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Refresh token not found. Please log in."
+ *       403:
+ *         description: Forbidden. The refresh token is invalid or expired.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid or expired refresh token. Please log in again."
+ *       500:
+ *         description: Internal server error.
+ */
+router.post('/refresh-token', refreshToken);
+
+/**
+ * @swagger
  * /api/users/admin/login:
  *   post:
  *     summary: Admin login
@@ -402,7 +463,12 @@ router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
  *                 example: "AdminPass123"
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: Login successful. An `httpOnly` cookie named `refreshToken` is set.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: "refreshToken=...; Path=/; HttpOnly; Secure; SameSite=Strict"
  *         content:
  *           application/json:
  *             schema:
