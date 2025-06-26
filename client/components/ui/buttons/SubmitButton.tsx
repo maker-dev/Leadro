@@ -17,7 +17,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
     <button
       type="submit"
       className={clsx(
-        "w-full rounded-2xl py-3 mt-6 text-lg font-semibold text-white shadow transition",
+        "relative w-full rounded-2xl py-3 mt-6 text-lg font-semibold text-white shadow transition",
         "bg-[#31B5B2] hover:bg-[#269e9b]",
         "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#31B5B2]",
         "disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer",
@@ -27,13 +27,12 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
       aria-busy={loading}
       {...props}
     >
-      {loading ? (
-        <span className="inline-flex items-center gap-2">
+      <span className={clsx({ invisible: loading })}>{children}</span>
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center gap-2">
           <FaSpinner className="animate-spin" />
           Submitting...
         </span>
-      ) : (
-        children
       )}
     </button>
   );
