@@ -1,18 +1,41 @@
 import { useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ZodTypeAny } from "zod";
 import TextInput from "@/components/ui/inputs/TextInput";
 import PasswordInput from "@/components/ui/inputs/PasswordInput";
-import { formSchema } from "@/app/register/schema";
-import { FormValues } from "@/app/register/types";
 
-type AddClientProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: FormValues) => void;
+export type FieldConfig = {
+  name: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  required?: boolean;
 };
 
-const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
+type FormModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
+  title: string;
+  fields: FieldConfig[];
+  initialValues: Record<string, any>;
+  validationSchema: ZodTypeAny;
+  submitLabel?: string;
+  cancelLabel?: string;
+};
+
+const FormModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  title,
+  fields,
+  initialValues,
+  validationSchema,
+  submitLabel = "Submit",
+  cancelLabel = "Cancel",
+}: FormModalProps) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -20,14 +43,9 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+  } = useForm<any>({
+    resolver: zodResolver(validationSchema),
+    defaultValues: initialValues,
     mode: "onBlur",
   });
 
@@ -65,10 +83,16 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
 
   if (!isOpen) return null;
 
-  const handleFormSubmit = (data: FormValues) => {
+  const handleFormSubmit = (data: any) => {
     onSubmit(data);
     reset();
   };
+
+  // Helper to convert error to FieldError type
+  const toFieldError = (err: any) =>
+    err && typeof err.message === "string"
+      ? { message: err.message, type: "manual" }
+      : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm backdrop-saturate-150 transition-all">
@@ -77,14 +101,14 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
         className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-0 relative animate-fadeInScale"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="add-client-title"
+        aria-labelledby="form-modal-title"
       >
         <div className="rounded-t-2xl bg-[#269e9b] px-6 py-4">
           <h2
-            id="add-client-title"
+            id="form-modal-title"
             className="text-lg font-bold text-white tracking-wide"
           >
-            Add Client
+            {title}
           </h2>
         </div>
         <form
@@ -92,45 +116,35 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
           className="space-y-4 px-6 py-6"
           noValidate
         >
-          <TextInput
-            label="Full Name"
-            placeholder="Nanyonga Rahmah"
-            {...register("name")}
-            error={errors.name}
-          />
-          <TextInput
-            label="Email"
-            type="email"
-            placeholder="ugaka1204@gmail.com"
-            {...register("email")}
-            error={errors.email}
-          />
-          <PasswordInput
-            label="Password"
-            placeholder="Password"
-            {...register("password")}
-            error={errors.password}
-          />
-          <PasswordInput
-            label="Confirm Password"
-            placeholder="Confirm Password"
-            {...register("confirmPassword")}
-            error={errors.confirmPassword}
-          />
+          {fields.map((field) => {
+            const commonProps = {
+              label: field.label,
+              placeholder: field.placeholder,
+              ...register(field.name),
+              error: toFieldError(errors[field.name]),
+              required: field.required,
+            };
+            if (field.type === "password") {
+              return <PasswordInput key={field.name} {...commonProps} />;
+            }
+            return (
+              <TextInput key={field.name} type={field.type} {...commonProps} />
+            );
+          })}
           <div className="border-t border-gray-100 pt-4 flex justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
             >
-              Cancel
+              {cancelLabel}
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="px-4 py-2 rounded-lg bg-[#31B5B2] text-white font-semibold shadow hover:bg-[#269e9b] focus:outline-none focus:ring-2 focus:ring-green-400 transition"
             >
-              Add Client
+              {submitLabel}
             </button>
           </div>
         </form>
@@ -154,4 +168,4 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
   );
 };
 
-export default CreateClientModal;
+export default FormModal;

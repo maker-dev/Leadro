@@ -3,8 +3,47 @@ import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
 import ClientTable from "@/components/ui/tables/admin/ClientsTable";
-import CreateClientModal from "@/components/modals/admin/CreateClientModal";
+import CreateFormModal, { FieldConfig } from "@/components/modals/FormModal";
+import { formSchema } from "@/app/register/schema";
 import { FormValues } from "@/app/register/types";
+
+const clientFields: FieldConfig[] = [
+  {
+    name: "name",
+    label: "Full Name",
+    type: "text",
+    placeholder: "Nanyonga Rahmah",
+    required: true,
+  },
+  {
+    name: "email",
+    label: "Email",
+    type: "email",
+    placeholder: "ugaka1204@gmail.com",
+    required: true,
+  },
+  {
+    name: "password",
+    label: "Password",
+    type: "password",
+    placeholder: "Password",
+    required: true,
+  },
+  {
+    name: "confirmPassword",
+    label: "Confirm Password",
+    type: "password",
+    placeholder: "Confirm Password",
+    required: true,
+  },
+];
+
+const initialClientValues: FormValues = {
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
 
 function ClientsPage() {
   const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
@@ -41,10 +80,16 @@ function ClientsPage() {
             isAddClientOpen={isAddClientOpen}
             setIsAddClientOpen={setIsAddClientOpen}
           />
-          <CreateClientModal
+          <CreateFormModal
             isOpen={isAddClientOpen}
             onClose={() => setIsAddClientOpen(false)}
             onSubmit={handleAddClient}
+            title="Add Client"
+            fields={clientFields}
+            initialValues={initialClientValues}
+            validationSchema={formSchema}
+            submitLabel="Add Client"
+            cancelLabel="Cancel"
           />
         </main>
       </div>
