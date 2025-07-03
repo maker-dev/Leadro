@@ -38,7 +38,7 @@ const adminNavItems = [
 
 const clientNavItems = [
   {
-    label: "Dashboard",
+    label: "Overview",
     icon: <IoIosHome className="w-5 h-5 text-white" />,
     href: "/client/dashboard",
   },
