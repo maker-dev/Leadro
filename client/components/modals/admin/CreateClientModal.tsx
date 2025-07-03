@@ -1,24 +1,35 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import TextInput from "@/components/ui/inputs/TextInput";
+import PasswordInput from "@/components/ui/inputs/PasswordInput";
+import { formSchema } from "@/app/register/schema";
+import { FormValues } from "@/app/register/types";
 
 type AddClientProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    username: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-  }) => void;
+  onSubmit: (data: FormValues) => void;
 };
 
 const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    mode: "onBlur",
+  });
 
   // Focus trap and Esc to close
   useEffect(() => {
@@ -49,17 +60,14 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
       const firstInput = modalRef.current.querySelector("input");
       firstInput && (firstInput as HTMLElement).focus();
     }
-  }, [isOpen]);
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(form);
+  const handleFormSubmit = (data: FormValues) => {
+    onSubmit(data);
+    reset();
   };
 
   return (
@@ -79,79 +87,36 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
             Add Client
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-6">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={form.username}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white shadow-sm transition"
-              required
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white shadow-sm transition"
-              required
-              autoComplete="off"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white shadow-sm transition"
-              required
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white shadow-sm transition"
-              required
-              autoComplete="new-password"
-            />
-          </div>
+        <form
+          onSubmit={handleSubmit(handleFormSubmit)}
+          className="space-y-4 px-6 py-6"
+          noValidate
+        >
+          <TextInput
+            label="Full Name"
+            placeholder="Nanyonga Rahmah"
+            {...register("name")}
+            error={errors.name}
+          />
+          <TextInput
+            label="Email"
+            type="email"
+            placeholder="ugaka1204@gmail.com"
+            {...register("email")}
+            error={errors.email}
+          />
+          <PasswordInput
+            label="Password"
+            placeholder="Password"
+            {...register("password")}
+            error={errors.password}
+          />
+          <PasswordInput
+            label="Confirm Password"
+            placeholder="Confirm Password"
+            {...register("confirmPassword")}
+            error={errors.confirmPassword}
+          />
           <div className="border-t border-gray-100 pt-4 flex justify-end gap-2">
             <button
               type="button"
@@ -162,7 +127,8 @@ const CreateClientModal = ({ isOpen, onClose, onSubmit }: AddClientProps) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-green-500 text-white font-semibold shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-[#31B5B2] text-white font-semibold shadow hover:bg-[#269e9b] focus:outline-none focus:ring-2 focus:ring-green-400 transition"
             >
               Add Client
             </button>

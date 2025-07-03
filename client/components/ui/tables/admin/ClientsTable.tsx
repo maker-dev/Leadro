@@ -1,5 +1,10 @@
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { useState } from "react";
+import React, { useState } from "react";
+
+type ClientTableType = {
+  isAddClientOpen: boolean;
+  setIsAddClientOpen: (value: boolean) => void;
+};
 
 // Fake data type
 type Client = {
@@ -62,7 +67,10 @@ const fakeClients: Client[] = [
 
 const rowsPerPageOptions = [8, 16, 32];
 
-const ClientsTable = () => {
+const ClientsTable: React.FC<ClientTableType> = ({
+  isAddClientOpen,
+  setIsAddClientOpen,
+}) => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
 
@@ -101,6 +109,7 @@ const ClientsTable = () => {
           className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
           tabIndex={0}
           aria-label="Add New Client"
+          onClick={() => setIsAddClientOpen(!isAddClientOpen)}
         >
           Add New
         </button>
