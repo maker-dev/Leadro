@@ -2,6 +2,7 @@
 import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
+import ClientTable from "@/components/ui/tables/ClientTable";
 
 function ClientsPage() {
   const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
@@ -17,7 +18,7 @@ function ClientsPage() {
       />
 
       {/* Main area */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <Header
           title="Clients"
@@ -27,7 +28,7 @@ function ClientsPage() {
 
         {/* Main content */}
         <main className="flex-1 p-6 bg-gray-50">
-          {/* Your dashboard content goes here */}
+          <ClientTable />
         </main>
       </div>
     </div>
