@@ -2,7 +2,14 @@
 import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
-import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import {
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaDownload,
+  FaSort,
+  FaFilter,
+} from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import Link from "next/link";
@@ -160,16 +167,46 @@ const Leads = () => {
         <main className="flex-1 p-6 bg-gray-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">All Leads</h2>
-              <Link href="/client/leads/create" passHref>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-800">All Leads</h2>
                 <button
-                  className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
+                  className="p-2 rounded-full bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
                   tabIndex={0}
-                  aria-label="Add New Lead"
+                  aria-label="Download Leads"
+                  title="Download Leads"
                 >
-                  Add New
+                  <FaDownload className="text-blue-500" size={18} />
                 </button>
-              </Link>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
+                  tabIndex={0}
+                  aria-label="Sort"
+                  title="Sort"
+                >
+                  <FaSort className="text-gray-500" size={16} />
+                  Sort
+                </button>
+                <button
+                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
+                  tabIndex={0}
+                  aria-label="Filter"
+                  title="Filter"
+                >
+                  <FaFilter className="text-gray-500" size={16} />
+                  Filter
+                </button>
+                <Link href="/client/leads/create" passHref>
+                  <button
+                    className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
+                    tabIndex={0}
+                    aria-label="Add New Lead"
+                  >
+                    Add New
+                  </button>
+                </Link>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <BaseTable

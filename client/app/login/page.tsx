@@ -8,7 +8,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden">
         {/* Left: Form */}
-        <div className="flex-1 p-8 md:p-12 flex flex-col justify-center overflow-y-auto max-h-[800px]">
+        <div className="flex-1 p-6 md:p-8 flex flex-col justify-center overflow-y-auto">
           <div className="w-full max-w-md mx-auto">
             <div className="flex justify-end text-sm text-gray-500 mb-6 mt-2">
               Don&apos;t have account?{" "}
@@ -19,7 +19,7 @@ const LoginPage = () => {
                 Register
               </Link>
             </div>
-            <h1 className="text-3xl font-medium text-center mb-1 mt-2 tracking-wide">
+            <h1 className="text-3xl font-medium text-center mb-1 mt-14 tracking-wide">
               Welcome
             </h1>
             <p className="text-center text-gray-500 mb-6">
@@ -29,7 +29,7 @@ const LoginPage = () => {
           </div>
         </div>
         {/* Right: Image */}
-        <div className="hidden md:block md:w-1/2 relative h-[800px]">
+        <div className="hidden md:block md:w-1/2 relative">
           <Image
             src={accountLogin}
             alt="Login visual"

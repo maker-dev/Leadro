@@ -19,7 +19,7 @@ const RegisterPage = () => {
                 Login
               </Link>
             </div>
-            <h1 className="text-3xl font-medium text-center mb-1 mt-2 tracking-wide">
+            <h1 className="text-3xl font-medium text-center mb-1 mt-14 tracking-wide">
               Welcome
             </h1>
             <p className="text-center text-gray-500 mb-6">

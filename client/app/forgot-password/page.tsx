@@ -7,19 +7,7 @@ const ForgotPasswordPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden">
-        {/* Left: Illustration */}
-        <div className="hidden md:flex md:w-1/2 items-center justify-center bg-[#f6fbfc]">
-          <div className="relative w-96 h-96">
-            <Image
-              src={forgotPassword}
-              alt="Forgot password illustration"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
-        {/* Right: Form */}
+        {/* Left: Form */}
         <div className="flex-1 p-12 flex flex-col justify-center">
           <div className="w-full max-w-md mx-auto">
             <h1 className="text-3xl font-bold mb-2 text-gray-900">
@@ -38,6 +26,18 @@ const ForgotPasswordPage = () => {
                 Back to sign in
               </Link>
             </div>
+          </div>
+        </div>
+        {/* Right: Illustration */}
+        <div className="hidden md:flex md:w-1/2 items-center justify-center bg-[#f6fbfc]">
+          <div className="relative w-96 h-96">
+            <Image
+              src={forgotPassword}
+              alt="Forgot password illustration"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
         </div>
       </div>
