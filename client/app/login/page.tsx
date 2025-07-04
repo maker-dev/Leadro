@@ -5,7 +5,7 @@ import LoginForm from "./LoginForm";
 
 const LoginPage = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-2">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden">
         {/* Left: Form */}
         <div className="flex-1 p-8 md:p-12 flex flex-col justify-center overflow-y-auto max-h-[800px]">

@@ -64,7 +64,7 @@ export default function EmailVerifiedPage() {
   const config = statusConfig[status];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-2">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center">
         <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 bg-[#31B5B2]/10">
           {config.icon}

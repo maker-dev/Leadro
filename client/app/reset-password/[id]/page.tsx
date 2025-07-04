@@ -9,7 +9,7 @@ type Props = {
 
 export default function ResetPasswordPage({ params }: Props) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-2">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden">
         {/* Left: Illustration */}
         <div className="hidden md:flex md:w-1/2 items-center justify-center p-12 bg-[#f6fbfc]">

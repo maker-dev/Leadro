@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import Link from "next/link";
 
 // Fake data type
 const fakeLeads = [
@@ -160,13 +161,15 @@ const Leads = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">All Leads</h2>
-              <button
-                className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
-                tabIndex={0}
-                aria-label="Add New Lead"
-              >
-                Add New
-              </button>
+              <Link href="/client/leads/create" passHref>
+                <button
+                  className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
+                  tabIndex={0}
+                  aria-label="Add New Lead"
+                >
+                  Add New
+                </button>
+              </Link>
             </div>
             <div className="overflow-x-auto">
               <BaseTable
