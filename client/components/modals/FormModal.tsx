@@ -98,7 +98,7 @@ const FormModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm backdrop-saturate-150 transition-all">
       <div
         ref={modalRef}
-        className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-0 relative animate-fadeInScale"
+        className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-0 relative animate-fadeInScale mx-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="form-modal-title"

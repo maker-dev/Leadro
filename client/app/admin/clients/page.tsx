@@ -4,9 +4,12 @@ import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
-import CreateFormModal, { FieldConfig } from "@/components/modals/FormModal";
-import { formSchema } from "@/app/register/schema";
-import { FormValues } from "@/app/register/types";
+import FormModal, { FieldConfig } from "@/components/modals/FormModal";
+import AddFormSchema from "./schemas/AddClientSchema";
+import AddFormValues from "./types/AddClientType";
+import EditFormSchema from "./schemas/EditClientSchema";
+import EditFormValues from "./types/EditClientType";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 
 const clientFields: FieldConfig[] = [
   {
@@ -39,7 +42,24 @@ const clientFields: FieldConfig[] = [
   },
 ];
 
-const initialClientValues: FormValues = {
+const editFields: FieldConfig[] = [
+  {
+    name: "name",
+    label: "Full Name",
+    type: "text",
+    placeholder: "Nanyonga Rahmah",
+    required: true,
+  },
+  {
+    name: "email",
+    label: "Email",
+    type: "email",
+    placeholder: "ugaka1204@gmail.com",
+    required: true,
+  },
+];
+
+const initialClientValues: AddFormValues = {
   name: "",
   email: "",
   password: "",
@@ -115,25 +135,55 @@ const columns: BaseTableColumn[] = [
 function ClientsPage() {
   const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<EditFormValues | null>(
+    null
+  );
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
 
   // Pagination logic (UI only)
   const totalRows = 1240; // Example total
   const totalPages = Math.ceil(totalRows / rowsPerPage);
 
-  const handleAddClient = (formData: FormValues) => {
+  const handleAddClient = (formData: AddFormValues) => {
     // Handle form data (API call, etc.)
-    console.log(formData);
+    console.log("Add Client", formData);
     setIsAddClientOpen(false);
   };
 
   const handleEdit = (id: number) => {
-    alert(`Edit client ${id}`);
+    const client = fakeClients.find((c) => c.id === id);
+    if (client) {
+      setEditingClient({
+        name: client.name,
+        email: client.email,
+      });
+      setIsEditClientOpen(true);
+    }
+  };
+
+  const handleUpdateClient = (formData: EditFormValues) => {
+    // Handle update logic (API call, etc.)
+    console.log("Update Client", formData);
+    setIsEditClientOpen(false);
+    setEditingClient(null);
   };
 
   const handleDelete = (id: number) => {
-    alert(`Delete client ${id}`);
+    setDeletingClientId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingClientId !== null) {
+      // Handle delete logic (API call, etc.)
+      console.log("Delete client", deletingClientId);
+    }
+    setIsDeleteModalOpen(false);
+    setDeletingClientId(null);
   };
 
   const handlePrevPage = () => {
@@ -230,15 +280,41 @@ function ClientsPage() {
               />
             </div>
           </div>
-          <CreateFormModal
+          <FormModal
             isOpen={isAddClientOpen}
             onClose={() => setIsAddClientOpen(false)}
             onSubmit={handleAddClient}
             title="Add Client"
             fields={clientFields}
             initialValues={initialClientValues}
-            validationSchema={formSchema}
+            validationSchema={AddFormSchema}
             submitLabel="Add Client"
+            cancelLabel="Cancel"
+          />
+          <FormModal
+            isOpen={isEditClientOpen}
+            onClose={() => {
+              setIsEditClientOpen(false);
+              setEditingClient(null);
+            }}
+            onSubmit={handleUpdateClient}
+            title="Edit Client"
+            fields={editFields}
+            initialValues={editingClient || { name: "", email: "" }}
+            validationSchema={EditFormSchema}
+            submitLabel="Update Client"
+            cancelLabel="Cancel"
+          />
+          <ConfirmDeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setDeletingClientId(null);
+            }}
+            onConfirm={handleConfirmDelete}
+            title="Delete Client"
+            description="Are you sure you want to delete this client? This action cannot be undone."
+            confirmLabel="Delete"
             cancelLabel="Cancel"
           />
         </main>

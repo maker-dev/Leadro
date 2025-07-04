@@ -4,6 +4,7 @@ import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 
 // Fake data type
 const fakeLeads = [
@@ -111,6 +112,10 @@ const Leads = () => {
   const [rowsPerPage, setRowsPerPage] = useState(8);
   const totalRows = 1240; // Example total
 
+  // ConfirmDeleteModal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
+
   const handleView = (id: number) => {
     alert(`View lead ${id}`);
   };
@@ -118,7 +123,17 @@ const Leads = () => {
     alert(`Modify lead ${id}`);
   };
   const handleDelete = (id: number) => {
-    alert(`Delete lead ${id}`);
+    setDeletingLeadId(id);
+    setIsDeleteModalOpen(true);
+  };
+  const handleConfirmDelete = () => {
+    // Here you would call your delete API or logic
+    setIsDeleteModalOpen(false);
+    setDeletingLeadId(null);
+  };
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setDeletingLeadId(null);
   };
 
   return (
@@ -239,6 +254,16 @@ const Leads = () => {
               />
             </div>
           </div>
+          {/* Confirm Delete Modal */}
+          <ConfirmDeleteModal
+            isOpen={isDeleteModalOpen}
+            onClose={handleCancelDelete}
+            onConfirm={handleConfirmDelete}
+            title="Delete Lead"
+            description="Are you sure you want to delete this lead? This action cannot be undone."
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
+          />
         </main>
       </div>
     </div>
