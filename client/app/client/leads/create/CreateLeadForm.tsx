@@ -1,10 +1,12 @@
 "use client";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createLeadFormSchema } from "./schema";
 import { CreateLeadFormValues } from "./types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
+import NormalSelectInput from "@/components/ui/inputs/NormalSelectInput";
+import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -13,17 +15,13 @@ const statusOptions = [
   { value: "lost", label: "Lost" },
 ];
 
-type CustomField = { label: string; value: string };
-
 const CreateLeadForm = () => {
   const router = useRouter();
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setValue,
-    getValues,
+    control,
   } = useForm<CreateLeadFormValues>({
     resolver: zodResolver(createLeadFormSchema),
     defaultValues: {
@@ -33,180 +31,85 @@ const CreateLeadForm = () => {
       source: "",
       status: "new",
       message: "",
+      customFields: [],
     },
     mode: "onBlur",
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "customFields",
+  });
+
   const handleAddCustomField = () => {
-    setCustomFields((prev) => [
-      ...prev,
-      { label: `Custom Field ${prev.length + 1}`, value: "" },
-    ]);
-  };
-
-  const handleCustomFieldLabelChange = (idx: number, newLabel: string) => {
-    setCustomFields((prev) =>
-      prev.map((field, i) =>
-        i === idx ? { ...field, label: newLabel } : field
-      )
-    );
-  };
-
-  const handleCustomFieldValueChange = (idx: number, newValue: string) => {
-    setCustomFields((prev) =>
-      prev.map((field, i) =>
-        i === idx ? { ...field, value: newValue } : field
-      )
-    );
+    append({ label: "", value: "" });
   };
 
   const onSubmit = (data: CreateLeadFormValues) => {
-    // Include custom fields in submission
-    const customFieldData = customFields.reduce((acc, field) => {
-      acc[field.label] = field.value;
-      return acc;
-    }, {} as Record<string, string>);
-    console.log({ ...data, customFields: customFieldData });
+    console.log(data);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 w-full">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white rounded-2xl shadow-lg w-full max-w-5xl mx-auto p-10 md:p-20 flex flex-col gap-10"
+        className="bg-white rounded-2xl shadow-lg w-full max-w-5xl mx-auto p-10 md:p-20 flex flex-col gap-5"
         noValidate
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              {...register("name")}
-              className={`border ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              } rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400`}
-              placeholder="Enter name"
-            />
-            {errors.name && (
-              <span className="text-red-500 text-xs">
-                {errors.name.message}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              {...register("email")}
-              className={`border ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              } rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400`}
-              placeholder="Enter email"
-            />
-            {errors.email && (
-              <span className="text-red-500 text-xs">
-                {errors.email.message}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="phone"
-              className="text-sm font-medium text-gray-700"
-            >
-              Phone
-            </label>
-            <input
-              id="phone"
-              type="text"
-              {...register("phone")}
-              className={`border ${
-                errors.phone ? "border-red-500" : "border-gray-300"
-              } rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400`}
-              placeholder="Enter phone"
-            />
-            {errors.phone && (
-              <span className="text-red-500 text-xs">
-                {errors.phone.message}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="source"
-              className="text-sm font-medium text-gray-700"
-            >
-              Source
-            </label>
-            <input
-              id="source"
-              type="text"
-              {...register("source")}
-              className={`border ${
-                errors.source ? "border-red-500" : "border-gray-300"
-              } rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400`}
-              placeholder="Enter source"
-            />
-            {errors.source && (
-              <span className="text-red-500 text-xs">
-                {errors.source.message}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <div className="flex flex-col gap-2 md:col-span-2">
-            <label
-              htmlFor="status"
-              className="text-sm font-medium text-gray-700"
-            >
-              Status
-            </label>
-            <select
-              id="status"
-              {...register("status")}
-              className="border border-gray-300 rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400 bg-white text-gray-700"
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.status && (
-              <span className="text-red-500 text-xs">
-                {errors.status.message}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="message"
-            className="text-sm font-medium text-gray-700"
-          >
-            Message
-          </label>
-          <textarea
-            id="message"
-            {...register("message")}
-            className="border border-gray-300 rounded px-4 py-2 min-h-[80px] focus:ring-2 focus:ring-blue-400"
-            placeholder="Type your message here..."
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+          <NormalTextInput
+            label="Name"
+            id="name"
+            type="text"
+            required
+            error={errors.name}
+            placeholder="Enter name"
+            {...register("name")}
           />
-          {errors.message && (
-            <span className="text-red-500 text-xs">
-              {errors.message.message}
-            </span>
-          )}
+          <NormalTextInput
+            label="Email"
+            id="email"
+            type="email"
+            required
+            error={errors.email}
+            placeholder="Enter email"
+            {...register("email")}
+          />
+          <NormalTextInput
+            label="Phone"
+            id="phone"
+            type="text"
+            error={errors.phone}
+            placeholder="Enter phone"
+            {...register("phone")}
+          />
+          <NormalTextInput
+            label="Source"
+            id="source"
+            type="text"
+            error={errors.source}
+            placeholder="Enter source"
+            {...register("source")}
+          />
+        </div>
+        <div className="grid grid-cols-1">
+          <NormalSelectInput
+            label="Status"
+            id="status"
+            options={statusOptions}
+            error={errors.status}
+            required
+            {...register("status")}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <NormalTextAreaInput
+            label="Message"
+            id="message"
+            error={errors.message}
+            placeholder="Type your message here..."
+            {...register("message")}
+          />
         </div>
         {/* Custom Fields Section */}
         <div className="flex flex-col gap-4">
@@ -220,39 +123,33 @@ const CreateLeadForm = () => {
               + Add Field
             </button>
           </div>
-          {customFields.map((field, idx) => (
+          {fields.map((field, idx) => (
             <div
-              key={idx}
+              key={field.id}
               className="grid grid-cols-1 md:grid-cols-2 gap-2 items-center relative"
             >
-              <input
-                type="text"
-                value={field.label}
-                onChange={(e) =>
-                  handleCustomFieldLabelChange(idx, e.target.value)
-                }
-                className="border border-gray-300 rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400 font-semibold"
+              <NormalTextInput
+                label={`Label ${idx + 1}`}
+                id={`customFields.${idx}.label`}
                 placeholder="Field Label"
+                error={errors.customFields?.[idx]?.label}
+                {...register(`customFields.${idx}.label` as const)}
               />
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={field.value}
-                  onChange={(e) =>
-                    handleCustomFieldValueChange(idx, e.target.value)
-                  }
-                  className="border border-gray-300 rounded px-4 py-2 h-11 focus:ring-2 focus:ring-blue-400"
-                  placeholder="Field Value"
-                />
+                <div className="flex-1">
+                  <NormalTextInput
+                    label={`Value ${idx + 1}`}
+                    id={`customFields.${idx}.value`}
+                    placeholder="Field Value"
+                    error={errors.customFields?.[idx]?.value}
+                    {...register(`customFields.${idx}.value` as const)}
+                  />
+                </div>
                 <button
                   type="button"
                   className="ml-2 px-2 py-1 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs font-medium"
                   aria-label="Remove custom field"
-                  onClick={() =>
-                    setCustomFields((fields) =>
-                      fields.filter((_, i) => i !== idx)
-                    )
-                  }
+                  onClick={() => remove(idx)}
                 >
                   Remove
                 </button>

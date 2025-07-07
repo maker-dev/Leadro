@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const customFieldSchema = z.object({
+  label: z.string().min(1, "Custom field label is required"),
+  value: z.string().min(1, "Custom field value is required"),
+});
+
 export const createLeadFormSchema = z.object({
   name: z
     .string()
@@ -25,4 +30,5 @@ export const createLeadFormSchema = z.object({
     .string()
     .max(500, "Message must be at most 500 characters")
     .optional(),
+  customFields: z.array(customFieldSchema).optional(),
 });
