@@ -18,8 +18,14 @@ const TextInput: React.FC<TextInputProps> = ({
   ...props
 }) => {
   return (
-    <label className="block w-full" htmlFor={id || name}>
-      <span className="block mb-1 text-base font-bold text-black">{label}</span>
+    <div className="w-full">
+      <label
+        htmlFor={id || name}
+        className="block text-base font-bold text-black mb-1"
+      >
+        {label}
+      </label>
+
       <input
         id={id || name}
         name={name}
@@ -34,10 +40,17 @@ const TextInput: React.FC<TextInputProps> = ({
         aria-invalid={!!error}
         {...props}
       />
-      {error && (
-        <span className="text-red-500 text-sm mt-1">{error.message}</span>
-      )}
-    </label>
+
+      {/* Reserved space for error message */}
+      <span
+        className={clsx(
+          "block mt-1 text-sm h-[20px]",
+          error ? "text-red-500 visible" : "invisible"
+        )}
+      >
+        {error?.message || "placeholder"}
+      </span>
+    </div>
   );
 };
 

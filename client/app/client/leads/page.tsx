@@ -9,6 +9,7 @@ import {
   FaDownload,
   FaSort,
   FaFilter,
+  FaSearch,
 } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
@@ -124,6 +125,20 @@ const Leads = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
 
+  // Search bar state
+  const [searchTerm, setSearchTerm] = useState("");
+  const handleSearch = () => {
+    // Call API or handle search logic here
+    console.log("Search triggered for:", searchTerm);
+  };
+  const handleSearchInputKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   const handleView = (id: number) => {
     alert(`View lead ${id}`);
   };
@@ -165,9 +180,9 @@ const Leads = () => {
 
         {/* Main content */}
         <main className="flex-1 p-6 bg-gray-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
+          <div className="w-full bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full mb-6 gap-3">
+              <div className="flex items-center gap-2 mb-1 sm:mb-0">
                 <h2 className="text-xl font-bold text-gray-800">All Leads</h2>
                 <button
                   className="p-2 rounded-full bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
@@ -178,7 +193,26 @@ const Leads = () => {
                   <FaDownload className="text-blue-500" size={18} />
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="relative w-full sm:w-56">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FaSearch
+                      className="text-gray-400"
+                      size={16}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleSearchInputKeyDown}
+                    placeholder="Search..."
+                    aria-label="Search..."
+                    tabIndex={0}
+                    className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
+                  />
+                </div>
                 <button
                   className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
                   tabIndex={0}

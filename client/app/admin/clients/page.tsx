@@ -2,7 +2,7 @@
 import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import FormModal, { FieldConfig } from "@/components/modals/FormModal";
 import AddFormSchema from "./schemas/AddClientSchema";
@@ -143,6 +143,7 @@ function ClientsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(8);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Pagination logic (UI only)
   const totalRows = 1240; // Example total
@@ -199,6 +200,19 @@ function ClientsPage() {
     setPage(1);
   };
 
+  const handleSearch = () => {
+    // Call API with searchTerm or handle search logic here
+    console.log("Search triggered for:", searchTerm);
+  };
+
+  const handleSearchInputKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -220,17 +234,40 @@ function ClientsPage() {
 
         {/* Main content */}
         <main className="flex-1 p-6 bg-gray-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-5xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">All Clients</h2>
-              <button
-                className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
-                tabIndex={0}
-                aria-label="Add New Client"
-                onClick={() => setIsAddClientOpen(true)}
-              >
-                Add New
-              </button>
+          <div className="w-full bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-6 gap-3">
+              <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
+                All Clients
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="relative w-full sm:w-56">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FaSearch
+                      className="text-gray-400"
+                      size={16}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleSearchInputKeyDown}
+                    placeholder="Search by name, email..."
+                    aria-label="Search by name, email..."
+                    tabIndex={0}
+                    className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
+                  />
+                </div>
+                <button
+                  className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
+                  tabIndex={0}
+                  aria-label="Add New Client"
+                  onClick={() => setIsAddClientOpen(true)}
+                >
+                  Add New
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <BaseTable

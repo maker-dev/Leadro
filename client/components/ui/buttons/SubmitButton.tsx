@@ -17,7 +17,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({
     <button
       type="submit"
       className={clsx(
-        "relative w-full rounded-2xl py-3 mt-6 text-lg font-semibold text-white shadow transition",
+        "relative w-full rounded-2xl py-3 text-lg font-semibold text-white shadow transition",
         "bg-[#31B5B2] hover:bg-[#269e9b]",
         "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#31B5B2]",
         "disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer",

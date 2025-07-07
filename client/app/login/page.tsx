@@ -8,7 +8,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg flex flex-col md:flex-row overflow-hidden">
         {/* Left: Form */}
-        <div className="flex-1 p-6 md:p-8 flex flex-col justify-center overflow-y-auto">
+        <div className="flex-1 p-6 flex flex-col justify-center overflow-y-auto">
           <div className="w-full max-w-md mx-auto">
             <div className="flex justify-end text-sm text-gray-500 mb-6 mt-2">
               Don&apos;t have account?{" "}
