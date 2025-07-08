@@ -136,9 +136,6 @@ const Leads = () => {
     }
   };
 
-  const handleView = (id: number) => {
-    alert(`View lead ${id}`);
-  };
   const handleDelete = (id: number) => {
     setDeletingLeadId(id);
     setIsDeleteModalOpen(true);
@@ -277,18 +274,19 @@ const Leads = () => {
                   if (colKey === "actions") {
                     return (
                       <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleView(row.id)}
-                          tabIndex={0}
-                          aria-label={`View lead ${row.email}`}
-                          title="View"
-                          className="group p-2 rounded-full bg-gray-100 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                        >
-                          <FaEye
-                            className="text-blue-500 group-hover:text-blue-600"
-                            size={18}
-                          />
-                        </button>
+                        <Link href={`/client/leads/view/${row.id}`} passHref>
+                          <button
+                            tabIndex={0}
+                            aria-label={`View lead ${row.email}`}
+                            title="View"
+                            className="group p-2 rounded-full bg-gray-100 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                          >
+                            <FaEye
+                              className="text-blue-500 group-hover:text-blue-600"
+                              size={18}
+                            />
+                          </button>
+                        </Link>
                         <Link href={`/client/leads/update/${row.id}`} passHref>
                           <button
                             tabIndex={0}

@@ -4,11 +4,7 @@ import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
 import UpdateLeadForm from "./updateLeadForm";
 
-type Props = {
-  params: { id: string };
-};
-
-const UpdateLeadPage = ({ params }: Props) => {
+const UpdateLeadPage = () => {
   const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
 
   return (
