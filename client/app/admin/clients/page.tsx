@@ -253,8 +253,8 @@ function ClientsPage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={handleSearchInputKeyDown}
-                    placeholder="Search by name, email..."
-                    aria-label="Search by name, email..."
+                    placeholder="Search..."
+                    aria-label="Search..."
                     tabIndex={0}
                     className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
                   />

@@ -2,17 +2,10 @@
 import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
 import { useState } from "react";
-import {
-  FaEdit,
-  FaTrash,
-  FaEye,
-  FaDownload,
-  FaSort,
-  FaFilter,
-  FaSearch,
-} from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaDownload, FaSearch } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import ConfirmDownloadModal from "@/components/modals/ConfirmDownloadModal";
 import Link from "next/link";
 
 // Fake data type
@@ -125,8 +118,12 @@ const Leads = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
 
+  // ConfirmDownloadModal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
   // Search bar state
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const handleSearch = () => {
     // Call API or handle search logic here
     console.log("Search triggered for:", searchTerm);
@@ -142,9 +139,6 @@ const Leads = () => {
   const handleView = (id: number) => {
     alert(`View lead ${id}`);
   };
-  const handleEdit = (id: number) => {
-    alert(`Modify lead ${id}`);
-  };
   const handleDelete = (id: number) => {
     setDeletingLeadId(id);
     setIsDeleteModalOpen(true);
@@ -157,6 +151,16 @@ const Leads = () => {
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setDeletingLeadId(null);
+  };
+
+  const handleDownloadClick = () => {
+    setIsDownloadModalOpen(true);
+  };
+  const handleConfirmDownload = () => {
+    setIsDownloadModalOpen(false);
+  };
+  const handleCancelDownload = () => {
+    setIsDownloadModalOpen(false);
   };
 
   return (
@@ -189,6 +193,7 @@ const Leads = () => {
                   tabIndex={0}
                   aria-label="Download Leads"
                   title="Download Leads"
+                  onClick={handleDownloadClick}
                 >
                   <FaDownload className="text-blue-500" size={18} />
                 </button>
@@ -213,25 +218,20 @@ const Leads = () => {
                     className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
                   />
                 </div>
-                <button
-                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
                   tabIndex={0}
-                  aria-label="Sort"
-                  title="Sort"
+                  className="px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer"
                 >
-                  <FaSort className="text-gray-500" size={16} />
-                  Sort
-                </button>
-                <button
-                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition"
-                  tabIndex={0}
-                  aria-label="Filter"
-                  title="Filter"
-                >
-                  <FaFilter className="text-gray-500" size={16} />
-                  Filter
-                </button>
-                <Link href="/client/leads/create" passHref>
+                  <option value="all">All Statuses</option>
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="converted">Converted</option>
+                  <option value="lost">Lost</option>
+                </select>
+                <Link href={`/client/leads/create/`} passHref>
                   <button
                     className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
                     tabIndex={0}
@@ -289,18 +289,19 @@ const Leads = () => {
                             size={18}
                           />
                         </button>
-                        <button
-                          onClick={() => handleEdit(row.id)}
-                          tabIndex={0}
-                          aria-label={`Modify lead ${row.email}`}
-                          title="Modify"
-                          className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-                        >
-                          <FaEdit
-                            className="text-yellow-500 group-hover:text-yellow-600"
-                            size={18}
-                          />
-                        </button>
+                        <Link href={`/client/leads/update/${row.id}`} passHref>
+                          <button
+                            tabIndex={0}
+                            aria-label={`Modify lead ${row.email}`}
+                            title="Modify"
+                            className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+                          >
+                            <FaEdit
+                              className="text-yellow-500 group-hover:text-yellow-600"
+                              size={18}
+                            />
+                          </button>
+                        </Link>
                         <button
                           onClick={() => handleDelete(row.id)}
                           tabIndex={0}
@@ -336,6 +337,16 @@ const Leads = () => {
             title="Delete Lead"
             description="Are you sure you want to delete this lead? This action cannot be undone."
             confirmLabel="Delete"
+            cancelLabel="Cancel"
+          />
+          {/* Confirm Download Modal */}
+          <ConfirmDownloadModal
+            isOpen={isDownloadModalOpen}
+            onClose={handleCancelDownload}
+            onConfirm={handleConfirmDownload}
+            title="Download Leads"
+            description="Are you sure you want to download the selected leads?"
+            confirmLabel="Download"
             cancelLabel="Cancel"
           />
         </main>
