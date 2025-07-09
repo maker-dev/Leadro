@@ -1,8 +1,6 @@
 "use client";
-import Header from "@/components/layout/Header";
-import SideBar from "@/components/layout/SideBar";
 import { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { FaEdit, FaTrash, FaSearch, FaEye } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import FormModal, { FieldConfig } from "@/components/modals/FormModal";
 import AddFormSchema from "./schemas/AddClientSchema";
@@ -11,6 +9,7 @@ import EditFormSchema from "./schemas/EditClientSchema";
 import EditFormValues from "./types/EditClientType";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { usePageContext } from "@/context/PageTitleContext";
+import Link from "next/link";
 
 const clientFields: FieldConfig[] = [
   {
@@ -265,6 +264,19 @@ function ClientsPage() {
             if (colKey === "actions") {
               return (
                 <div className="flex justify-end gap-2">
+                  <Link href={`/admin/clients/view/${row.id}`} passHref>
+                    <button
+                      tabIndex={0}
+                      aria-label={`View lead ${row.email}`}
+                      title="View"
+                      className="group p-2 rounded-full bg-gray-100 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                    >
+                      <FaEye
+                        className="text-blue-500 group-hover:text-blue-600"
+                        size={18}
+                      />
+                    </button>
+                  </Link>
                   <button
                     onClick={() => handleEdit(row.id)}
                     tabIndex={0}

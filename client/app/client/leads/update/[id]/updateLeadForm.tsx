@@ -96,13 +96,14 @@ const fakeLeads = [
   },
 ];
 
-const UpdateLeadForm = () => {
+type UpdateLeadFormType = {
+  leadId: string;
+};
+
+const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
   const router = useRouter();
-  const pathname = usePathname(); // e.g., /leads/update/123
-  const segments = pathname.split("/");
-  const lastParam = segments[segments.length - 1];
   // Find the lead by id (convert id to number for comparison)
-  const lead = fakeLeads.find((l) => l.id === Number(lastParam));
+  const lead = fakeLeads.find((l) => l.id === Number(leadId));
 
   // Map extraFields to customFields array if present
   const customFields = lead?.extraFields

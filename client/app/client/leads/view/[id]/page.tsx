@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 import LeadDetails from "@/components/ui/cards/LeadDetails";
 import { useEffect } from "react";
 import { usePageContext } from "@/context/PageTitleContext";
@@ -83,18 +83,16 @@ const fakeLeads = [
   },
 ];
 
-const CreateLeadPage = () => {
+const ViewLeadPage = () => {
   const { setLabel, setTitle } = usePageContext();
-
   useEffect(() => {
     setLabel("Leads");
     setTitle("View Lead");
   }, [setLabel, setTitle]);
-  const pathname = usePathname(); // e.g., /leads/update/123
-  const segments = pathname.split("/");
-  const lastParam = segments[segments.length - 1];
 
-  const lead = fakeLeads.find((l) => l.id === lastParam);
+  const { id } = useParams(); // get lead id from dynamic route
+
+  const lead = fakeLeads.find((l) => l.id === id);
 
   // Helper to ensure status is a valid enum value
   const validStatuses = ["new", "contacted", "converted", "lost"] as const;
@@ -127,4 +125,4 @@ const CreateLeadPage = () => {
   );
 };
 
-export default CreateLeadPage;
+export default ViewLeadPage;
