@@ -25,7 +25,7 @@ const adminNavItems = [
     href: "/admin/Leads",
   },
   {
-    label: "Api-Keys",
+    label: "Api Keys",
     icon: <IoIosKey className="w-5 h-5 text-white" />,
     href: "/admin/api-keys",
   },
@@ -50,10 +50,10 @@ const clientNavItems = [
   {
     label: "Access Management",
     icon: <IoIosPeople className="w-5 h-5 text-white" />,
-    href: "/client/access",
+    href: "/client/access-management",
   },
   {
-    label: "API Key",
+    label: "Api Key",
     icon: <IoIosKey className="w-5 h-5 text-white" />,
     href: "/client/api-key",
   },
@@ -124,6 +124,7 @@ const SideBar: React.FC<SideBarProps> = ({
               )}
               <Link
                 href={item.href}
+                onClick={onClose}
                 tabIndex={0}
                 aria-label={item.label}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-white/70 transition-colors cursor-pointer text-base

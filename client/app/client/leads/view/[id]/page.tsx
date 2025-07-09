@@ -1,7 +1,4 @@
 "use client";
-import Header from "@/components/layout/Header";
-import SideBar from "@/components/layout/SideBar";
-import { useState } from "react";
 import { usePathname } from "next/navigation";
 import LeadDetails from "@/components/ui/cards/LeadDetails";
 
@@ -85,7 +82,6 @@ const fakeLeads = [
 ];
 
 const CreateLeadPage = () => {
-  const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
   const pathname = usePathname(); // e.g., /leads/update/123
   const segments = pathname.split("/");
   const lastParam = segments[segments.length - 1];
@@ -100,47 +96,26 @@ const CreateLeadPage = () => {
     validStatuses.includes(status) ? status : "new";
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <SideBar
-        activeLabel="Leads"
-        isOpen={isLeftBarOpen}
-        onClose={() => setIsLeftBarOpen(!isLeftBarOpen)}
-        role="client"
-      />
-
-      {/* Main area */}
-      <div className="flex flex-col flex-1">
-        {/* Header */}
-        <Header
-          title="View Lead"
-          username="mikari alias"
-          onMenuClick={() => setIsLeftBarOpen(!isLeftBarOpen)}
+    <>
+      {lead ? (
+        <LeadDetails
+          lead={{
+            id: lead.id,
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            source: lead.source,
+            status: getValidStatus(lead.status),
+            created_at: lead.createdAt,
+            extraFields: lead.extraFields,
+          }}
         />
-
-        {/* Main content */}
-        <main className="flex-1 p-6 bg-gray-50">
-          {lead ? (
-            <LeadDetails
-              lead={{
-                id: lead.id,
-                name: lead.name,
-                email: lead.email,
-                phone: lead.phone,
-                source: lead.source,
-                status: getValidStatus(lead.status),
-                created_at: lead.createdAt,
-                extraFields: lead.extraFields,
-              }}
-            />
-          ) : (
-            <div className="text-center text-gray-500 text-lg mt-10">
-              Lead not found.
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
+      ) : (
+        <div className="text-center text-gray-500 text-lg mt-10">
+          Lead not found.
+        </div>
+      )}
+    </>
   );
 };
 

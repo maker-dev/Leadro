@@ -133,7 +133,6 @@ const columns: BaseTableColumn[] = [
 ];
 
 function ClientsPage() {
-  const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<EditFormValues | null>(
@@ -214,148 +213,125 @@ function ClientsPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <SideBar
-        activeLabel="Clients"
-        isOpen={isLeftBarOpen}
-        onClose={() => setIsLeftBarOpen(!isLeftBarOpen)}
-        role="admin"
-      />
-
-      {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Header */}
-        <Header
-          title="Clients"
-          username="mikari alias"
-          onMenuClick={() => setIsLeftBarOpen(!isLeftBarOpen)}
-        />
-
-        {/* Main content */}
-        <main className="flex-1 p-6 bg-gray-50">
-          <div className="w-full bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-6 gap-3">
-              <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
-                All Clients
-              </h2>
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-                <div className="relative w-full sm:w-56">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <FaSearch
-                      className="text-gray-400"
-                      size={16}
-                      aria-hidden="true"
-                    />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearchInputKeyDown}
-                    placeholder="Search..."
-                    aria-label="Search..."
-                    tabIndex={0}
-                    className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
-                  />
-                </div>
-                <button
-                  className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
-                  tabIndex={0}
-                  aria-label="Add New Client"
-                  onClick={() => setIsAddClientOpen(true)}
-                >
-                  Add New
-                </button>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <BaseTable
-                columns={columns}
-                data={fakeClients}
-                rowKey={(row) => row.id}
-                renderCell={(row, colKey) => {
-                  if (colKey === "actions") {
-                    return (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(row.id)}
-                          tabIndex={0}
-                          aria-label={`Edit ${row.name}`}
-                          title="Edit"
-                          className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-                        >
-                          <FaEdit
-                            className="text-yellow-500 group-hover:text-yellow-600"
-                            size={18}
-                          />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(row.id)}
-                          tabIndex={0}
-                          aria-label={`Delete ${row.name}`}
-                          title="Delete"
-                          className="group p-2 rounded-full bg-gray-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
-                        >
-                          <FaTrash
-                            className="text-red-500 group-hover:text-red-600"
-                            size={18}
-                          />
-                        </button>
-                      </div>
-                    );
-                  }
-                  // @ts-ignore
-                  return row[colKey];
-                }}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                totalRows={totalRows}
-                onPageChange={setPage}
-                onRowsPerPageChange={setRowsPerPage}
-                rowsPerPageOptions={rowsPerPageOptions}
+    <div className="w-full bg-white rounded-2xl shadow-lg p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-6 gap-3">
+        <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
+          All Clients
+        </h2>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="relative w-full sm:w-56">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FaSearch
+                className="text-gray-400"
+                size={16}
+                aria-hidden="true"
               />
-            </div>
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchInputKeyDown}
+              placeholder="Search..."
+              aria-label="Search..."
+              tabIndex={0}
+              className="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full text-sm"
+            />
           </div>
-          <FormModal
-            isOpen={isAddClientOpen}
-            onClose={() => setIsAddClientOpen(false)}
-            onSubmit={handleAddClient}
-            title="Add Client"
-            fields={clientFields}
-            initialValues={initialClientValues}
-            validationSchema={AddFormSchema}
-            submitLabel="Add Client"
-            cancelLabel="Cancel"
-          />
-          <FormModal
-            isOpen={isEditClientOpen}
-            onClose={() => {
-              setIsEditClientOpen(false);
-              setEditingClient(null);
-            }}
-            onSubmit={handleUpdateClient}
-            title="Edit Client"
-            fields={editFields}
-            initialValues={editingClient || { name: "", email: "" }}
-            validationSchema={EditFormSchema}
-            submitLabel="Update Client"
-            cancelLabel="Cancel"
-          />
-          <ConfirmDeleteModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => {
-              setIsDeleteModalOpen(false);
-              setDeletingClientId(null);
-            }}
-            onConfirm={handleConfirmDelete}
-            title="Delete Client"
-            description="Are you sure you want to delete this client? This action cannot be undone."
-            confirmLabel="Delete"
-            cancelLabel="Cancel"
-          />
-        </main>
+          <button
+            className="bg-green-500 text-white px-5 py-2 rounded-full shadow hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer"
+            tabIndex={0}
+            aria-label="Add New Client"
+            onClick={() => setIsAddClientOpen(true)}
+          >
+            Add New
+          </button>
+        </div>
       </div>
+      <div className="overflow-x-auto">
+        <BaseTable
+          columns={columns}
+          data={fakeClients}
+          rowKey={(row) => row.id}
+          renderCell={(row, colKey) => {
+            if (colKey === "actions") {
+              return (
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => handleEdit(row.id)}
+                    tabIndex={0}
+                    aria-label={`Edit ${row.name}`}
+                    title="Edit"
+                    className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+                  >
+                    <FaEdit
+                      className="text-yellow-500 group-hover:text-yellow-600"
+                      size={18}
+                    />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(row.id)}
+                    tabIndex={0}
+                    aria-label={`Delete ${row.name}`}
+                    title="Delete"
+                    className="group p-2 rounded-full bg-gray-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
+                  >
+                    <FaTrash
+                      className="text-red-500 group-hover:text-red-600"
+                      size={18}
+                    />
+                  </button>
+                </div>
+              );
+            }
+            // @ts-ignore
+            return row[colKey];
+          }}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={setPage}
+          onRowsPerPageChange={setRowsPerPage}
+          rowsPerPageOptions={rowsPerPageOptions}
+        />
+      </div>
+      <FormModal
+        isOpen={isAddClientOpen}
+        onClose={() => setIsAddClientOpen(false)}
+        onSubmit={handleAddClient}
+        title="Add Client"
+        fields={clientFields}
+        initialValues={initialClientValues}
+        validationSchema={AddFormSchema}
+        submitLabel="Add Client"
+        cancelLabel="Cancel"
+      />
+      <FormModal
+        isOpen={isEditClientOpen}
+        onClose={() => {
+          setIsEditClientOpen(false);
+          setEditingClient(null);
+        }}
+        onSubmit={handleUpdateClient}
+        title="Edit Client"
+        fields={editFields}
+        initialValues={editingClient || { name: "", email: "" }}
+        validationSchema={EditFormSchema}
+        submitLabel="Update Client"
+        cancelLabel="Cancel"
+      />
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingClientId(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Client"
+        description="Are you sure you want to delete this client? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+      />
     </div>
   );
 }
