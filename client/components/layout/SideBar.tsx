@@ -6,6 +6,7 @@ import {
   IoIosListBox,
   IoIosKey,
   IoIosSettings,
+  IoIosLock,
 } from "react-icons/io";
 
 const adminNavItems = [
@@ -23,6 +24,11 @@ const adminNavItems = [
     label: "Leads",
     icon: <IoIosListBox className="w-5 h-5 text-white" />,
     href: "/admin/Leads",
+  },
+  {
+    label: "Access Management",
+    icon: <IoIosLock className="w-5 h-5 text-white" />,
+    href: "/admin/access-management",
   },
   {
     label: "Api Keys",
@@ -49,7 +55,7 @@ const clientNavItems = [
   },
   {
     label: "Access Management",
-    icon: <IoIosPeople className="w-5 h-5 text-white" />,
+    icon: <IoIosLock className="w-5 h-5 text-white" />,
     href: "/client/access-management",
   },
   {

@@ -1,7 +1,7 @@
 "use client";
 import Header from "@/components/layout/Header";
 import SideBar from "@/components/layout/SideBar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import FormModal, { FieldConfig } from "@/components/modals/FormModal";
@@ -10,6 +10,7 @@ import AddFormValues from "./types/AddClientType";
 import EditFormSchema from "./schemas/EditClientSchema";
 import EditFormValues from "./types/EditClientType";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import { usePageContext } from "@/context/PageTitleContext";
 
 const clientFields: FieldConfig[] = [
   {
@@ -133,6 +134,13 @@ const columns: BaseTableColumn[] = [
 ];
 
 function ClientsPage() {
+  const { setLabel, setTitle } = usePageContext();
+
+  useEffect(() => {
+    setLabel("Clients");
+    setTitle("Clients");
+  }, [setLabel, setTitle]);
+
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<EditFormValues | null>(

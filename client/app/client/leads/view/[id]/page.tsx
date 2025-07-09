@@ -1,6 +1,8 @@
 "use client";
 import { usePathname } from "next/navigation";
 import LeadDetails from "@/components/ui/cards/LeadDetails";
+import { useEffect } from "react";
+import { usePageContext } from "@/context/PageTitleContext";
 
 // Fake data type
 const fakeLeads = [
@@ -82,6 +84,12 @@ const fakeLeads = [
 ];
 
 const CreateLeadPage = () => {
+  const { setLabel, setTitle } = usePageContext();
+
+  useEffect(() => {
+    setLabel("Leads");
+    setTitle("View Lead");
+  }, [setLabel, setTitle]);
   const pathname = usePathname(); // e.g., /leads/update/123
   const segments = pathname.split("/");
   const lastParam = segments[segments.length - 1];

@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaEye, FaDownload, FaSearch } from "react-icons/fa";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import ConfirmDownloadModal from "@/components/modals/ConfirmDownloadModal";
 import Link from "next/link";
+import { usePageContext } from "@/context/PageTitleContext";
 
 // Fake data type
 const fakeLeads = [
@@ -107,6 +108,13 @@ const columns: BaseTableColumn[] = [
 ];
 
 const Leads = () => {
+  const { setLabel, setTitle } = usePageContext();
+
+  useEffect(() => {
+    setLabel("Leads");
+    setTitle("Leads");
+  }, [setLabel, setTitle]);
+
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
   const totalRows = 1240; // Example total
