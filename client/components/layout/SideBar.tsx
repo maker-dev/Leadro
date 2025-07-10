@@ -8,6 +8,7 @@ import {
   IoIosSettings,
   IoIosLock,
 } from "react-icons/io";
+import { LuLogOut } from "react-icons/lu";
 
 const adminNavItems = [
   {
@@ -84,7 +85,9 @@ const SideBar: React.FC<SideBarProps> = ({
   role,
 }) => {
   const navItems = role === "admin" ? adminNavItems : clientNavItems;
-
+  const logOut = () => {
+    console.log("logout");
+  };
   return (
     <>
       {/* ✅ CHANGE: Overlay for mobile */}
@@ -148,6 +151,18 @@ const SideBar: React.FC<SideBarProps> = ({
             </React.Fragment>
           ))}
         </nav>
+        {/* Logout Button*/}
+        <div className="mt-8 mb-6 px-6">
+          <button
+            className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/70 transition-colors cursor-pointer"
+            aria-label="Logout"
+            tabIndex={0}
+            onClick={logOut}
+          >
+            <LuLogOut className="w-5 h-5" />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   );
