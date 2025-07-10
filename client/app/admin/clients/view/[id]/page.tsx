@@ -245,7 +245,7 @@ function ViewClientPage() {
                     aria-label="Contacted"
                   />
                   <span className="text-base">Contacted</span>
-                  <span className="ml-auto bg-yellow-400 text-black text-xs font-semibold rounded-full px-3 py-1">
+                  <span className="ml-auto bg-yellow-400 text-white text-xs font-semibold rounded-full px-3 py-1">
                     {client.leadSummary.leadsByStatus.Contacted}
                   </span>
                 </div>

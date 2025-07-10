@@ -3,7 +3,7 @@ const getApiKeyStatusProps = (status: string) => {
     case "active":
       return {
         dot: "bg-green-500",
-        pill: "bg-black text-white",
+        pill: "bg-green-500 text-white",
         label: "Active",
       };
     case "revoked":

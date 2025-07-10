@@ -169,7 +169,9 @@ const Leads = () => {
     <div className="w-full bg-white rounded-2xl shadow-lg p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full mb-6 gap-3">
         <div className="flex items-center gap-2 mb-1 sm:mb-0">
-          <h2 className="text-xl font-bold text-gray-800">All Leads</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            All Leads
+          </h2>
           <button
             className="p-2 rounded-full bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             tabIndex={0}

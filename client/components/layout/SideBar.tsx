@@ -27,11 +27,6 @@ const adminNavItems = [
     href: "/admin/Leads",
   },
   {
-    label: "Access Management",
-    icon: <IoIosLock className="w-5 h-5 text-white" />,
-    href: "/admin/access-management",
-  },
-  {
     label: "Api Keys",
     icon: <IoIosKey className="w-5 h-5 text-white" />,
     href: "/admin/api-keys",

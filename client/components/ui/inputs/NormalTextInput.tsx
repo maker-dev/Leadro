@@ -29,7 +29,7 @@ const NormalTextInput: React.FC<NormalTextInputProps> = ({
         type={type}
         required={required}
         className={clsx(
-          "w-full border rounded px-4 py-2 h-11 focus:ring-2 text-base focus:border-blue-500 focus:ring-blue-500",
+          "w-full border rounded px-4 py-2 h-11 focus:ring-2 text-base focus:border-black/60 focus:ring-black/60 outline-none",
           error ? "border-red-500" : "border-gray-300",
           className
         )}

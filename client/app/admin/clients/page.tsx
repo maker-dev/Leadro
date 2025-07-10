@@ -222,7 +222,7 @@ function ClientsPage() {
   return (
     <div className="w-full bg-white rounded-2xl shadow-lg p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full mb-6 gap-3">
-        <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0">
           All Clients
         </h2>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
