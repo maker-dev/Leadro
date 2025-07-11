@@ -22,7 +22,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: initialValues.name },
@@ -56,7 +55,6 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
               {...register("name")}
               error={errors.name}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black/60 text-base"
             />
           </div>
           <div>
@@ -89,7 +87,7 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
             {role}
           </span>
         </div>
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end mt-4">
           <button
             type="submit"
             disabled={isSubmitting}
