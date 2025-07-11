@@ -163,10 +163,10 @@ function ViewClientPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-8">
       {/* Basic Client Information Card */}
       <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8 mb-8"
+        className="bg-white border border-gray-200 rounded-xl shadow p-8"
         aria-label="Basic Client Information"
         tabIndex={0}
       >
@@ -191,6 +191,34 @@ function ViewClientPage() {
             <div className="text-gray-500 text-sm mb-1">Created At</div>
             <div className="text-lg">{formatDate(client.createdAt)}</div>
           </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Card */}
+      <div
+        className="bg-white border border-gray-200 rounded-xl shadow p-8"
+        aria-label="Quick Actions"
+        tabIndex={0}
+      >
+        <div className="text-2xl font-bold mb-1">Quick Actions</div>
+        <div className="text-gray-500 mb-6">Common actions for this client</div>
+        <div className="flex flex-col md:flex-row gap-4">
+          <button
+            className="flex items-center justify-center gap-2 bg-black text-white font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base focus:outline-none focus:ring hover:bg-gray-900 cursor-pointer"
+            aria-label="Add Lead for this Client"
+            tabIndex={0}
+          >
+            <FiPlus className="w-5 h-5" />
+            Add Lead for this Client
+          </button>
+          <button
+            className="flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base border border-gray-200 focus:outline-none focus:ring hover:bg-gray-50 cursor-pointer"
+            aria-label="View All Leads"
+            tabIndex={0}
+          >
+            <FiEye className="w-5 h-5" />
+            View All Leads
+          </button>
         </div>
       </div>
 
@@ -327,7 +355,7 @@ function ViewClientPage() {
 
       {/* API Key Information Card */}
       <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8 mt-8"
+        className="bg-white border border-gray-200 rounded-xl shadow p-8"
         aria-label="API Key Information"
         tabIndex={0}
       >
@@ -426,7 +454,7 @@ function ViewClientPage() {
 
       {/* Client Access Card */}
       <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8 mt-8"
+        className="bg-white border border-gray-200 rounded-xl shadow p-8"
         aria-label="Client Access"
         tabIndex={0}
       >
@@ -466,34 +494,6 @@ function ViewClientPage() {
               </div>
             ))
           )}
-        </div>
-      </div>
-
-      {/* Quick Actions Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8 mt-8"
-        aria-label="Quick Actions"
-        tabIndex={0}
-      >
-        <div className="text-2xl font-bold mb-1">Quick Actions</div>
-        <div className="text-gray-500 mb-6">Common actions for this client</div>
-        <div className="flex flex-col md:flex-row gap-4">
-          <button
-            className="flex items-center justify-center gap-2 bg-black text-white font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base focus:outline-none focus:ring hover:bg-gray-900 cursor-pointer"
-            aria-label="Add Lead for this Client"
-            tabIndex={0}
-          >
-            <FiPlus className="w-5 h-5" />
-            Add Lead for this Client
-          </button>
-          <button
-            className="flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base border border-gray-200 focus:outline-none focus:ring hover:bg-gray-50 cursor-pointer"
-            aria-label="View All Leads"
-            tabIndex={0}
-          >
-            <FiEye className="w-5 h-5" />
-            View All Leads
-          </button>
         </div>
       </div>
     </div>
