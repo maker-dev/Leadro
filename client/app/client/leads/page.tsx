@@ -1,13 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaEye, FaDownload, FaSearch } from "react-icons/fa";
+import {
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaDownload,
+  FaSearch,
+  FaUser,
+} from "react-icons/fa";
+import { FiShare2 } from "react-icons/fi";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import ConfirmDownloadModal from "@/components/modals/ConfirmDownloadModal";
 import Link from "next/link";
 import { usePageContext } from "@/context/PageTitleContext";
 
-// Fake data type
+// Fake data type (now includes owner info)
 const fakeLeads = [
   {
     id: 1,
@@ -17,6 +25,7 @@ const fakeLeads = [
     source: "Website",
     status: "new",
     createdAt: "2023-01-01",
+    owner: "me", // owned by current client
   },
   {
     id: 2,
@@ -26,6 +35,8 @@ const fakeLeads = [
     source: "Referral",
     status: "contacted",
     createdAt: "2023-01-02",
+    owner: "shared",
+    sharedBy: "Acme Corp",
   },
   {
     id: 3,
@@ -35,6 +46,7 @@ const fakeLeads = [
     source: "Ad Campaign",
     status: "converted",
     createdAt: "2023-01-03",
+    owner: "me",
   },
   {
     id: 4,
@@ -44,6 +56,8 @@ const fakeLeads = [
     source: "",
     status: "lost",
     createdAt: "2023-01-04",
+    owner: "shared",
+    sharedBy: "Beta LLC",
   },
   {
     id: 5,
@@ -53,6 +67,7 @@ const fakeLeads = [
     source: "Website",
     status: "new",
     createdAt: "2023-01-05",
+    owner: "me",
   },
   {
     id: 6,
@@ -62,6 +77,8 @@ const fakeLeads = [
     source: "Event",
     status: "contacted",
     createdAt: "2023-01-06",
+    owner: "shared",
+    sharedBy: "Gamma Inc",
   },
   {
     id: 7,
@@ -71,6 +88,7 @@ const fakeLeads = [
     source: "",
     status: "converted",
     createdAt: "2023-01-07",
+    owner: "me",
   },
   {
     id: 8,
@@ -80,6 +98,8 @@ const fakeLeads = [
     source: "Referral",
     status: "lost",
     createdAt: "2023-01-08",
+    owner: "shared",
+    sharedBy: "Acme Corp",
   },
 ];
 
@@ -94,6 +114,7 @@ const statusStyles: Record<string, string> = {
 
 const columns: BaseTableColumn[] = [
   { key: "name", label: "Name" },
+  { key: "owner", label: "Owner" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "source", label: "Source" },
@@ -232,6 +253,34 @@ const Leads = () => {
           data={fakeLeads}
           rowKey={(row) => row.id}
           renderCell={(row, colKey) => {
+            if (colKey === "owner") {
+              if (row.owner === "me") {
+                return (
+                  <span className="group relative flex items-center justify-center">
+                    <FaUser className="text-green-500 w-5 h-5" />
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 top-8 z-10 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                      style={{ minWidth: 120 }}
+                    >
+                      You own this lead
+                    </span>
+                  </span>
+                );
+              } else if (row.owner === "shared") {
+                return (
+                  <span className="group relative flex items-center justify-center">
+                    <FiShare2 className="text-blue-500 w-5 h-5" />
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 top-8 z-10 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                      style={{ minWidth: 120 }}
+                    >
+                      Shared by {row.sharedBy}
+                    </span>
+                  </span>
+                );
+              }
+              return null;
+            }
             if (colKey === "name") {
               return (
                 row.name || <span className="text-gray-400 italic">—</span>

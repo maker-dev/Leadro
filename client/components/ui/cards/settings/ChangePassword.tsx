@@ -5,6 +5,7 @@ import ChangePasswordSchema from "./schemas/ChangePasswordSchema";
 import { FiLock } from "react-icons/fi";
 import NormalTextInput from "../../inputs/NormalTextInput";
 import FormValues from "./types/ChangePasswordType";
+import BaseCard from "../BaseCard";
 
 interface ChangePasswordProps {
   onSubmit?: (data: FormValues) => void;
@@ -28,14 +29,11 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
   };
 
   return (
-    <div className="p-8 bg-white rounded-xl border border-gray-200 shadow">
-      <div className="flex items-center mb-2">
-        <FiLock className="w-6 h-6 mr-2" aria-label="Change Password" />
-        <h2 className="text-2xl font-bold">Change Password</h2>
-      </div>
-      <p className="text-gray-500 mb-8">
-        Update your password to keep your account secure.
-      </p>
+    <BaseCard
+      logo={<FiLock className="w-6 h-6" aria-label="Change Password" />}
+      title={"Change Password"}
+      description={"Update your password to keep your account secure."}
+    >
       <form
         autoComplete="off"
         aria-label="Change Password Form"
@@ -77,7 +75,7 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
           </button>
         </div>
       </form>
-    </div>
+    </BaseCard>
   );
 };
 

@@ -19,6 +19,7 @@ import {
 import { LuUsers } from "react-icons/lu";
 import formSchema from "./schemas/InviteClientSchema";
 import FormValues from "./types/InviteClientType";
+import BaseCard from "@/components/ui/cards/BaseCard";
 
 const permissionsList = [
   { value: "read", label: "Read", icon: FiEye },
@@ -138,14 +139,13 @@ function AccessManagementPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Invite Client Card */}
-      <div className="p-8 bg-white rounded-xl border border-gray-200 shadow">
-        <div className="flex items-center mb-2">
-          <FiUserPlus className="w-6 h-6 mr-2" aria-label="Invite a Client" />
-          <h2 className="text-xl sm:text-2xl font-bold">Invite a Client</h2>
-        </div>
-        <p className="text-gray-500 mb-8">
-          Send an invitation to share your leads with another client.
-        </p>
+      <BaseCard
+        logo={<FiUserPlus className="w-6 h-6" aria-label="Invite a Client" />}
+        title={"Invite a Client"}
+        description={
+          "Send an invitation to share your leads with another client"
+        }
+      >
         <form
           autoComplete="off"
           aria-label="Invite Client Form"
@@ -211,209 +211,228 @@ function AccessManagementPage() {
             </button>
           </div>
         </form>
-      </div>
+      </BaseCard>
 
       {/* Clients I've Shared With Card */}
-      <div className="p-8 bg-white rounded-xl border border-gray-200 shadow">
-        <div className="flex items-center mb-2">
-          <FiShare2
-            className="w-6 h-6 mr-2"
-            aria-label="Clients I've Shared With"
-          />
-          <h2 className="text-xl sm:text-2xl font-bold">
-            Clients I've Shared With
-          </h2>
-        </div>
-        <p className="text-gray-500 mb-8">
-          Manage access permissions for clients you've invited.
-        </p>
+      <BaseCard
+        logo={
+          <FiShare2 className="w-6 h-6" aria-label="Clients I've Shared With" />
+        }
+        title={"Client I've Shared With"}
+        description={"Manage access permissions for clients you've invited."}
+      >
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="text-gray-500 text-sm border-b border-gray-300">
-                <th className="py-2 px-2 font-semibold">Client Email</th>
-                <th className="py-2 px-2 font-semibold">Permissions</th>
-                <th className="py-2 px-2 font-semibold">Status</th>
-                <th className="py-2 px-2 font-semibold">Invited Date</th>
-                <th className="py-2 px-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sharedClients.map((client) => (
-                <tr
-                  key={client.email}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="py-3 px-2 font-medium text-gray-900">
-                    {client.email}
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      {client.permissions.includes("read") && (
-                        <FiEye
-                          className="w-5 h-5 text-green-600"
-                          title="Read"
-                        />
-                      )}
-                      {client.permissions.includes("update") && (
-                        <FiEdit2
-                          className="w-5 h-5 text-blue-600"
-                          title="Update"
-                        />
-                      )}
-                      {client.permissions.includes("delete") && (
-                        <FiTrash2
-                          className="w-5 h-5 text-red-500"
-                          title="Delete"
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2">
-                    {client.status === "Active" ? (
-                      <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold gap-2">
-                        <FiClock className="w-4 h-4 mr-1" />
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-2">{client.invitedDate}</td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      <button
-                        className="p-2 rounded border border-gray-200 hover:bg-gray-100"
-                        aria-label="Edit"
-                      >
-                        <FiEdit3 className="w-5 h-5" />
-                      </button>
-                      <button
-                        className="p-2 rounded border border-gray-200 hover:bg-gray-100 text-red-500"
-                        aria-label="Delete"
-                      >
-                        <FiTrash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
+          {sharedClients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
+              <span className="text-4xl mb-3" aria-hidden="true">
+                🤝
+              </span>
+              <div className="text-lg font-semibold mb-1">
+                No clients shared with yet
+              </div>
+              <div className="text-gray-500 mb-4">
+                You haven't shared access with any clients.
+              </div>
+            </div>
+          ) : (
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="text-gray-500 text-sm border-b border-gray-300">
+                  <th className="py-2 px-2 font-semibold">Client Email</th>
+                  <th className="py-2 px-2 font-semibold">Permissions</th>
+                  <th className="py-2 px-2 font-semibold">Status</th>
+                  <th className="py-2 px-2 font-semibold">Invited Date</th>
+                  <th className="py-2 px-2 font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sharedClients.map((client) => (
+                  <tr
+                    key={client.email}
+                    className="border-b border-gray-100 last:border-0"
+                  >
+                    <td className="py-3 px-2 font-medium text-gray-900">
+                      {client.email}
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex gap-2">
+                        {client.permissions.includes("read") && (
+                          <FiEye
+                            className="w-5 h-5 text-green-600"
+                            title="Read"
+                          />
+                        )}
+                        {client.permissions.includes("update") && (
+                          <FiEdit2
+                            className="w-5 h-5 text-blue-600"
+                            title="Update"
+                          />
+                        )}
+                        {client.permissions.includes("delete") && (
+                          <FiTrash2
+                            className="w-5 h-5 text-red-500"
+                            title="Delete"
+                          />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-2">
+                      {client.status === "Active" ? (
+                        <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold gap-2">
+                          <FiClock className="w-4 h-4 mr-1" />
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-2">{client.invitedDate}</td>
+                    <td className="py-3 px-2">
+                      <div className="flex gap-2">
+                        <button
+                          className="p-2 rounded border border-gray-200 hover:bg-gray-100"
+                          aria-label="Edit"
+                        >
+                          <FiEdit3 className="w-5 h-5" />
+                        </button>
+                        <button
+                          className="p-2 rounded border border-gray-200 hover:bg-gray-100 text-red-500"
+                          aria-label="Delete"
+                        >
+                          <FiTrash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      </div>
+      </BaseCard>
 
       {/* Clients Who Shared With Me Card */}
-      <div className="p-8 bg-white rounded-xl border border-gray-200 shadow">
-        <div className="flex items-center mb-2">
+      <BaseCard
+        logo={
           <LuUsers
-            className="w-6 h-6 mr-2"
+            className="w-6 h-6"
             aria-label="Clients Who Shared With Me"
           />
-          <h2 className="text-xl sm:text-2xl font-bold">
-            Clients Who Shared With Me
-          </h2>
-        </div>
-        <p className="text-gray-500 mb-8">
-          View leads shared by other clients and manage invitation requests.
-        </p>
+        }
+        title="Clients Who Shared With Me"
+        description="View leads shared by other clients and manage invitation requests."
+      >
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left">
-            <thead>
-              <tr className="text-gray-500 text-sm border-b border-gray-300">
-                <th className="py-2 px-2 font-semibold">Client Name</th>
-                <th className="py-2 px-2 font-semibold">Email</th>
-                <th className="py-2 px-2 font-semibold">Permissions</th>
-                <th className="py-2 px-2 font-semibold">Status</th>
-                <th className="py-2 px-2 font-semibold">Date</th>
-                <th className="py-2 px-2 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sharedWithMeClients.map((client) => (
-                <tr
-                  key={client.email}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="py-3 px-2 font-medium text-gray-900">
-                    {client.name}
-                  </td>
-                  <td className="py-3 px-2">{client.email}</td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      {client.permissions.includes("read") && (
-                        <FiEye
-                          className="w-5 h-5 text-green-600"
-                          title="Read"
-                        />
-                      )}
-                      {client.permissions.includes("update") && (
-                        <FiEdit2
-                          className="w-5 h-5 text-blue-600"
-                          title="Update"
-                        />
-                      )}
-                      {client.permissions.includes("delete") && (
-                        <FiTrash2
-                          className="w-5 h-5 text-red-500"
-                          title="Delete"
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2">
-                    {client.status === "Active" ? (
-                      <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold gap-2">
-                        <FiClock className="w-4 h-4 mr-1" />
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-2">{client.date}</td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      {client.type === "accepted" ? (
-                        <button
-                          className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60"
-                          aria-label="View Leads"
-                        >
-                          <FiDatabase className="w-5 h-5" />
-                          View Leads
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-green-400 text-green-600 font-semibold shadow hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400"
-                            aria-label="Accept"
-                          >
-                            <FiCheckCircle className="w-5 h-5" />
-                            Accept
-                          </button>
-                          <button
-                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-red-300 text-red-500 font-semibold shadow hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
-                            aria-label="Reject"
-                          >
-                            <FiTrash2 className="w-5 h-5" />
-                            Reject
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+          {sharedWithMeClients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
+              <span className="text-4xl mb-3" aria-hidden="true">
+                👥
+              </span>
+              <div className="text-lg font-semibold mb-1">
+                No clients have shared with you
+              </div>
+              <div className="text-gray-500 mb-4">
+                No one has shared access with you yet.
+              </div>
+            </div>
+          ) : (
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="text-gray-500 text-sm border-b border-gray-300">
+                  <th className="py-2 px-2 font-semibold">Client Name</th>
+                  <th className="py-2 px-2 font-semibold">Email</th>
+                  <th className="py-2 px-2 font-semibold">Permissions</th>
+                  <th className="py-2 px-2 font-semibold">Status</th>
+                  <th className="py-2 px-2 font-semibold">Date</th>
+                  <th className="py-2 px-2 font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sharedWithMeClients.map((client) => (
+                  <tr
+                    key={client.email}
+                    className="border-b border-gray-100 last:border-0"
+                  >
+                    <td className="py-3 px-2 font-medium text-gray-900">
+                      {client.name}
+                    </td>
+                    <td className="py-3 px-2">{client.email}</td>
+                    <td className="py-3 px-2">
+                      <div className="flex gap-2">
+                        {client.permissions.includes("read") && (
+                          <FiEye
+                            className="w-5 h-5 text-green-600"
+                            title="Read"
+                          />
+                        )}
+                        {client.permissions.includes("update") && (
+                          <FiEdit2
+                            className="w-5 h-5 text-blue-600"
+                            title="Update"
+                          />
+                        )}
+                        {client.permissions.includes("delete") && (
+                          <FiTrash2
+                            className="w-5 h-5 text-red-500"
+                            title="Delete"
+                          />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-2">
+                      {client.status === "Active" ? (
+                        <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-4 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold gap-2">
+                          <FiClock className="w-4 h-4 mr-1" />
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-2">{client.date}</td>
+                    <td className="py-3 px-2">
+                      <div className="flex gap-2">
+                        {client.type === "accepted" ? (
+                          <button
+                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60"
+                            aria-label="View Leads"
+                          >
+                            <FiDatabase className="w-5 h-5" />
+                            View Leads
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-green-400 text-green-600 font-semibold shadow hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400"
+                              aria-label="Accept"
+                            >
+                              <FiCheckCircle className="w-5 h-5" />
+                              Accept
+                            </button>
+                            <button
+                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-red-300 text-red-500 font-semibold shadow hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
+                              aria-label="Reject"
+                            >
+                              <FiTrash2 className="w-5 h-5" />
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      </div>
+      </BaseCard>
     </div>
   );
 }

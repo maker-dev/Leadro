@@ -12,6 +12,7 @@ import maskApiKey from "@/utils/maskApiKey";
 import formatDate from "@/utils/formateDate";
 import getApiKeyStatusProps from "@/utils/getApiStatusProps";
 import getInitials from "@/utils/getInitials";
+import BaseCard from "@/components/ui/cards/BaseCard";
 
 const fakeClients = [
   {
@@ -165,17 +166,11 @@ function ViewClientPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Basic Client Information Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8"
-        aria-label="Basic Client Information"
-        tabIndex={0}
+      <BaseCard
+        logo={<FiUser className="w-6 h-6" aria-hidden="true" />}
+        title="Basic Client Information"
+        description=""
       >
-        <div className="flex items-center gap-2 mb-6">
-          <FiUser className="w-6 h-6" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-bold">
-            Basic Client Information
-          </h2>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
           <div>
             <div className="mb-4">
@@ -192,7 +187,7 @@ function ViewClientPage() {
             <div className="text-lg">{formatDate(client.createdAt)}</div>
           </div>
         </div>
-      </div>
+      </BaseCard>
 
       {/* Quick Actions Card */}
       <div
@@ -223,15 +218,11 @@ function ViewClientPage() {
       </div>
 
       {/* Lead Summary Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8"
-        aria-label="Lead Summary"
-        tabIndex={0}
+      <BaseCard
+        logo={<FiBarChart2 className="w-6 h-6" aria-hidden="true" />}
+        title="Lead Summary"
+        description=""
       >
-        <div className="flex items-center gap-2 mb-6">
-          <FiBarChart2 className="w-6 h-6" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-bold">Lead Summary</h2>
-        </div>
         {client.leadSummary.totalLeads === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[180px] text-center">
             <span className="text-5xl mb-4" aria-hidden="true">
@@ -351,18 +342,14 @@ function ViewClientPage() {
             </div>
           </div>
         )}
-      </div>
+      </BaseCard>
 
       {/* API Key Information Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8"
-        aria-label="API Key Information"
-        tabIndex={0}
+      <BaseCard
+        logo={<FiKey className="w-6 h-6" aria-hidden="true" />}
+        title="API Key Information"
+        description=""
       >
-        <div className="flex items-center gap-2 mb-6">
-          <FiKey className="w-6 h-6" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-bold">API Key Information</h2>
-        </div>
         {client.apiKeyInfo ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 items-center mb-6">
@@ -450,26 +437,20 @@ function ViewClientPage() {
             </button>
           </div>
         )}
-      </div>
+      </BaseCard>
 
       {/* Client Access Card */}
-      <div
-        className="bg-white border border-gray-200 rounded-xl shadow p-8"
-        aria-label="Client Access"
-        tabIndex={0}
+      <BaseCard
+        logo={<FiUsers className="w-6 h-6" aria-hidden="true" />}
+        title="Client Access"
+        description="Users who have permission to access this client's data"
       >
-        <div className="flex items-center gap-2 mb-1">
-          <FiUsers className="w-6 h-6" aria-hidden="true" />
-          <h2 className="text-xl sm:text-2xl font-bold">Client Access</h2>
-        </div>
-        <div className="text-gray-500 mb-6 text-base">
-          Users who have permission to access this client's data
-        </div>
         <div className="flex items-center justify-between mb-4">
           <div className="font-semibold text-base">
             Users with Access ({client.clientAccess.length})
           </div>
         </div>
+
         <div className="flex flex-col gap-4">
           {client.clientAccess.length === 0 ? (
             <div className="text-gray-400 text-center py-8">
@@ -495,7 +476,7 @@ function ViewClientPage() {
             ))
           )}
         </div>
-      </div>
+      </BaseCard>
     </div>
   );
 }
