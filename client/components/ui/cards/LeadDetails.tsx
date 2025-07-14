@@ -13,6 +13,7 @@ type LeadDetailsProps = {
     status: "new" | "contacted" | "converted" | "lost";
     created_at: string;
     extraFields?: Record<string, string>;
+    message?: string;
   };
 };
 
@@ -100,6 +101,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
             value={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
           />
           <DetailRow label="Source" value={lead.source} />
+          <DetailRow label="Message" value={lead.message} />
           <DetailRow label="Created" value={lead.created_at} />
           {/* Render extra fields if any */}
           {lead.extraFields &&
@@ -126,7 +128,7 @@ const DetailRow = ({ label, value }: { label: string; value?: string }) => (
     <span className="sm:w-40 shrink-0 text-gray-500 font-medium capitalize">
       {label}
     </span>
-    <span className="mt-1 sm:mt-0 sm:ml-6 text-gray-900 break-all">
+    <span className="mt-1 sm:mt-0 sm:ml-6 text-gray-900 hyphens-auto max-w-lg">
       {value || <span className="italic text-gray-400">—</span>}
     </span>
   </div>

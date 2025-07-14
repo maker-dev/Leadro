@@ -1,2 +1,7 @@
 @import "tailwindcss";
 @import "react-datepicker/dist/react-datepicker.css";
+.hyphens-auto {
+  hyphens: auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

@@ -150,16 +150,9 @@ const Leads = () => {
   const [ownerFilter, setOwnerFilter] = useState("anyone");
 
   //ui state
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-
-  const handleApplyDate = () => setIsDatePickerOpen(false);
-  const handleClearDate = () => {
-    setDateRange([null, null]);
-    setIsDatePickerOpen(false);
-  };
 
   //pagination state
   const [page, setPage] = useState(1);

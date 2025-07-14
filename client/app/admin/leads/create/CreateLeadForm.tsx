@@ -7,8 +7,9 @@ import { useRouter } from "next/navigation";
 import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
 import NormalSelectInput from "@/components/ui/inputs/NormalSelectInput";
 import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
-import { FiPlus } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
+import { FiUser } from "react-icons/fi";
+import { FiPlus } from "react-icons/fi";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -52,7 +53,24 @@ const CreateLeadForm = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-8">
+      {/* Select Client */}
+      <BaseCard
+        logo={<FiUser className="w-6 h-6 text-gray-700" />}
+        title="Select Client"
+        description="Choose the client you want to add a lead for"
+      >
+        <NormalSelectInput
+          label="Client"
+          id="clientEmail"
+          required
+          error={errors.clientEmail}
+          options={[]}
+          {...register("clientEmail")}
+        />
+      </BaseCard>
+
+      {/* Lead information */}
       <BaseCard
         logo={<FiPlus className="w-6 h-6" />}
         title="Lead Information"

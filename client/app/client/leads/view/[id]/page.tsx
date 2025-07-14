@@ -17,6 +17,7 @@ const fakeLeads = [
     extraFields: {
       address: "rue 24",
     },
+    message: "Interested in a demo call next week.",
   },
   {
     id: "2",
@@ -26,6 +27,7 @@ const fakeLeads = [
     source: "Referral",
     status: "contacted",
     createdAt: "2023-01-02",
+    message: "Please follow up via email only.",
   },
   {
     id: "3",
@@ -35,6 +37,7 @@ const fakeLeads = [
     source: "Ad Campaign",
     status: "converted",
     createdAt: "2023-01-03",
+    message: "Converted after 2.",
   },
   {
     id: "4",
@@ -44,6 +47,7 @@ const fakeLeads = [
     source: "",
     status: "lost",
     createdAt: "2023-01-04",
+    message: "No response after initial contact.",
   },
   {
     id: "5",
@@ -53,6 +57,7 @@ const fakeLeads = [
     source: "Website",
     status: "new",
     createdAt: "2023-01-05",
+    message: "",
   },
   {
     id: "6",
@@ -62,6 +67,7 @@ const fakeLeads = [
     source: "Event",
     status: "contacted",
     createdAt: "2023-01-06",
+    message: undefined,
   },
   {
     id: "7",
@@ -71,6 +77,7 @@ const fakeLeads = [
     source: "",
     status: "converted",
     createdAt: "2023-01-07",
+    message: "Great potential for upsell.",
   },
   {
     id: "8",
@@ -80,6 +87,7 @@ const fakeLeads = [
     source: "Referral",
     status: "lost",
     createdAt: "2023-01-08",
+    message: "Not interested at this time.",
   },
 ];
 
@@ -114,6 +122,7 @@ const ViewLeadPage = () => {
             status: getValidStatus(lead.status),
             created_at: lead.createdAt,
             extraFields: lead.extraFields,
+            message: lead.message,
           }}
         />
       ) : (
