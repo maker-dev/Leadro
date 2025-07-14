@@ -24,7 +24,7 @@ const adminNavItems = [
   {
     label: "Leads",
     icon: <IoIosListBox className="w-5 h-5 text-white" />,
-    href: "/admin/Leads",
+    href: "/admin/leads",
   },
   {
     label: "Api Keys",
