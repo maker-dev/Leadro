@@ -1,19 +1,15 @@
 "use client";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createLeadFormSchema } from "./schema";
-import { CreateLeadFormValues } from "./types";
+import { updateLeadFormSchema } from "./schema";
+import { UpdateLeadFormValues } from "./types";
 import { useRouter } from "next/navigation";
 import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
 import NormalSelectInput from "@/components/ui/inputs/NormalSelectInput";
 import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
+import { SubmitHandler } from "react-hook-form";
+import { FiEdit } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
-import { FiUser } from "react-icons/fi";
-import { FiPlus } from "react-icons/fi";
-import DropDownSelector, {
-  DropDownOption,
-} from "@/components/ui/inputs/DropDownSelector";
-import { useState } from "react";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -22,105 +18,133 @@ const statusOptions = [
   { value: "lost", label: "Lost" },
 ];
 
-// Mock client options (replace with real data as needed)
-const clientOptions: DropDownOption[] = [
+// Fake data type
+const fakeLeads = [
   {
-    value: "john.smith@techcorp.com",
-    label: "John Smith",
-    subtext: "john.smith@techcorp.com",
+    id: 1,
+    name: "John Doe",
+    email: "john@example.com",
+    phone: "1234567890",
+    source: "Website",
+    status: "new",
+    createdAt: "2023-01-01",
+    extraFields: {
+      Address: "Rue 45",
+    },
   },
   {
-    value: "sarah.johnson@innovate.com",
-    label: "Sarah Johnson",
-    subtext: "sarah.johnson@innovate.com",
+    id: 2,
+    name: "",
+    email: "jane@example.com",
+    phone: "",
+    source: "Referral",
+    status: "contacted",
+    createdAt: "2023-01-02",
   },
   {
-    value: "michael.chen@startupco.com",
-    label: "Michael Chen",
-    subtext: "michael.chen@startupco.com",
+    id: 3,
+    name: "Alice Smith",
+    email: "alice@example.com",
+    phone: "9876543210",
+    source: "Ad Campaign",
+    status: "converted",
+    createdAt: "2023-01-03",
   },
   {
-    value: "emma.wilson@designhub.io",
-    label: "Emma Wilson",
-    subtext: "emma.wilson@designhub.io",
+    id: 4,
+    name: "Bob Lee",
+    email: "bob@example.com",
+    phone: "",
+    source: "",
+    status: "lost",
+    createdAt: "2023-01-04",
   },
   {
-    value: "david.lee@marketplus.org",
-    label: "David Lee",
-    subtext: "david.lee@marketplus.org",
+    id: 5,
+    name: "",
+    email: "eve@example.com",
+    phone: "5551234567",
+    source: "Website",
+    status: "new",
+    createdAt: "2023-01-05",
   },
   {
-    value: "nina.patel@bizconnect.net",
-    label: "Nina Patel",
-    subtext: "nina.patel@bizconnect.net",
+    id: 6,
+    name: "Charlie Brown",
+    email: "charlie@example.com",
+    phone: "",
+    source: "Event",
+    status: "contacted",
+    createdAt: "2023-01-06",
   },
   {
-    value: "khalid.rahman@webtide.com",
-    label: "Khalid Rahman",
-    subtext: "khalid.rahman@webtide.com",
+    id: 7,
+    name: "",
+    email: "dave@example.com",
+    phone: "",
+    source: "",
+    status: "converted",
+    createdAt: "2023-01-07",
   },
   {
-    value: "isabelle.dupont@creativify.fr",
-    label: "Isabelle Dupont",
-    subtext: "isabelle.dupont@creativify.fr",
-  },
-  {
-    value: "liam.andersen@nordicsoft.se",
-    label: "Liam Andersen",
-    subtext: "liam.andersen@nordicsoft.se",
-  },
-  {
-    value: "fatima.elhassan@africode.io",
-    label: "Fatima Elhassan",
-    subtext: "fatima.elhassan@africode.io",
-  },
-  {
-    value: "oliver.nguyen@skyapps.vn",
-    label: "Oliver Nguyen",
-    subtext: "oliver.nguyen@skyapps.vn",
-  },
-  {
-    value: "maria.garcia@latindev.co",
-    label: "Maria Garcia",
-    subtext: "maria.garcia@latindev.co",
-  },
-  {
-    value: "hans.schmidt@codekraft.de",
-    label: "Hans Schmidt",
-    subtext: "hans.schmidt@codekraft.de",
-  },
-  {
-    value: "sofia.ribeiro@tecnobr.com",
-    label: "Sofia Ribeiro",
-    subtext: "sofia.ribeiro@tecnobr.com",
-  },
-  {
-    value: "alex.kim@pacdev.kr",
-    label: "Alex Kim",
-    subtext: "alex.kim@pacdev.kr",
+    id: 8,
+    name: "Emily White",
+    email: "emily@example.com",
+    phone: "4445556666",
+    source: "Referral",
+    status: "lost",
+    createdAt: "2023-01-08",
   },
 ];
 
-const CreateLeadForm = () => {
+type UpdateLeadFormType = {
+  leadId: string;
+};
+
+const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
   const router = useRouter();
+  // Find the lead by id (convert id to number for comparison)
+  const lead = fakeLeads.find((l) => l.id === Number(leadId));
+
+  // Map extraFields to customFields array if present
+  const customFields = lead?.extraFields
+    ? Object.entries(lead.extraFields).map(([label, value]) => ({
+        label,
+        value,
+      }))
+    : [];
+
+  // Helper to ensure status is a valid enum value
+  const validStatuses = ["new", "contacted", "converted", "lost"] as const;
+  const getValidStatus = (status: any): UpdateLeadFormValues["status"] =>
+    validStatuses.includes(status) ? status : "new";
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     control,
-    setValue,
-  } = useForm<CreateLeadFormValues>({
-    resolver: zodResolver(createLeadFormSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      source: "",
-      status: "new",
-      message: "",
-      customFields: [],
-      clientEmail: "",
-    },
+  } = useForm<UpdateLeadFormValues>({
+    resolver: zodResolver(updateLeadFormSchema),
+    defaultValues: lead
+      ? {
+          name: lead.name || "",
+          email: lead.email || "",
+          phone: lead.phone || "",
+          source: lead.source || "",
+          status: getValidStatus(lead.status),
+          message: "",
+          customFields,
+        }
+      : {
+          name: "",
+          email: "",
+          phone: "",
+          source: "",
+          status: "new",
+          message: "",
+          customFields: [],
+        },
     mode: "onBlur",
   });
 
@@ -129,54 +153,20 @@ const CreateLeadForm = () => {
     name: "customFields",
   });
 
-  // State for selected client
-  const [selectedClient, setSelectedClient] = useState<DropDownOption | null>(
-    null
-  );
-
   const handleAddCustomField = () => {
     append({ label: "", value: "" });
   };
 
-  const onSubmit = (data: CreateLeadFormValues) => {
+  const onSubmit: SubmitHandler<UpdateLeadFormValues> = (data) => {
     console.log(data);
   };
 
-  // When a client is selected, update the form value
-  const handleClientChange = (option: DropDownOption | null) => {
-    setSelectedClient(option);
-    setValue("clientEmail", option ? option.value : "");
-  };
-
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      {/* Select Client */}
+    <div className="max-w-5xl mx-auto">
       <BaseCard
-        logo={<FiUser className="w-6 h-6 text-gray-700" />}
-        title="Select Client"
-        description="Choose the client you want to add a lead for"
-      >
-        <div>
-          <DropDownSelector
-            options={clientOptions}
-            value={selectedClient}
-            onChange={handleClientChange}
-            placeholder="Select client..."
-            className="w-full"
-          />
-          {errors.clientEmail && (
-            <span className="text-xs text-red-500 mt-1 block">
-              {errors.clientEmail.message as string}
-            </span>
-          )}
-        </div>
-      </BaseCard>
-
-      {/* Lead information */}
-      <BaseCard
-        logo={<FiPlus className="w-6 h-6" />}
+        logo={<FiEdit className="w-6 h-6" />}
         title="Lead Information"
-        description="Fill in the details for the new lead."
+        description="Edit the details for this lead."
       >
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -309,4 +299,4 @@ const CreateLeadForm = () => {
   );
 };
 
-export default CreateLeadForm;
+export default UpdateLeadForm;
