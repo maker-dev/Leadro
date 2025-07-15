@@ -12,7 +12,7 @@ function DaschboardPage() {
     setTitle("Overview");
   }, [setLabel, setTitle]);
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       <StatusCard label="Active" count={60} icon={<FaPlay />} color="blue" />
       <StatusCard label="Paused" count={16} icon={<FaPause />} color="yellow" />
       <StatusCard label="Stopped" count={64} icon={<FaStop />} color="red" />

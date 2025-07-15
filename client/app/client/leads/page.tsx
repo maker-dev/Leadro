@@ -211,7 +211,9 @@ const Leads = () => {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <FiFilter className="text-gray-700" size={24} />
-            <h2 className="text-2xl font-bold text-gray-800">Filters</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              Filters
+            </h2>
           </div>
           <p className="text-gray-500 text-sm">
             Filter leads by various criteria

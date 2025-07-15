@@ -199,12 +199,14 @@ const Leads = () => {
 
   return (
     <div className="w-full">
-      {/* Filter Card */}
+      {/* Filter */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <FiFilter className="text-gray-700" size={24} />
-            <h2 className="text-2xl font-bold text-gray-800">Filters</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              Filters
+            </h2>
           </div>
           <p className="text-gray-500 text-sm">
             Filter leads by various criteria
@@ -356,7 +358,7 @@ const Leads = () => {
           </div>
         </div>
       </div>
-      {/* Table Card (with Add New button in header) */}
+      {/* Table (with Add New button in header) */}
       <div className="w-full bg-white rounded-2xl shadow-lg p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full mb-6 gap-3">
           <div className="flex items-center gap-2 mb-1 sm:mb-0">
