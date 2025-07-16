@@ -4,13 +4,14 @@ import { usePageContext } from "@/context/PageTitleContext";
 import StatisticsCard from "@/components/ui/cards/StatisticsCard";
 import BaseCard from "@/components/ui/cards/BaseCard";
 import {
-  FaKey,
   FaCheckCircle,
   FaTimesCircle,
   FaChartBar,
   FaClock,
 } from "react-icons/fa";
-import { FiCopy, FiCheck, FiRotateCw, FiTrash2 } from "react-icons/fi";
+import { GoKey } from "react-icons/go";
+import { FiKey } from "react-icons/fi";
+import { FiCopy, FiCheck, FiRotateCw, FiTrash2, FiSlash } from "react-icons/fi";
 
 const ViewKeysPage = () => {
   const { setLabel, setTitle } = usePageContext();
@@ -71,7 +72,7 @@ const ViewKeysPage = () => {
           title="Total API Keys"
           value={10}
           description="All keys for this client"
-          icon={<FaKey />}
+          icon={<FiKey />}
           ariaLabel="Total API Keys"
         />
         <StatisticsCard
@@ -105,7 +106,7 @@ const ViewKeysPage = () => {
       </div>
       {/* Managing api keys Card */}
       <BaseCard
-        logo={<FaKey className="w-6 h-6" aria-label="API Key Table" />}
+        logo={<GoKey className="w-6 h-6" aria-label="API Key Table" />}
         title="Client API Keys"
         description="Manage API keys for the selected client."
       >
@@ -175,7 +176,7 @@ const ViewKeysPage = () => {
                         tabIndex={0}
                         aria-label="Revoke"
                       >
-                        <FiRotateCw className="w-4 h-4" /> Revoke
+                        <FiSlash className="w-4 h-4" /> Revoke
                       </button>
                     )}
                     {apiKey.actions.includes("delete") && (

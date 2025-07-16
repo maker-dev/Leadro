@@ -6,14 +6,19 @@ import { useParams } from "next/navigation";
 import { FiUser } from "react-icons/fi";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { FiBarChart2 } from "react-icons/fi";
-import { FiKey, FiCopy, FiUsers, FiPlus, FiEye } from "react-icons/fi";
-import { useState } from "react";
-import maskApiKey from "@/utils/maskApiKey";
+import {
+  FiKey,
+  FiUsers,
+  FiPlus,
+  FiEye,
+  FiCheckCircle,
+  FiXCircle,
+} from "react-icons/fi";
 import formatDate from "@/utils/formateDate";
-import getApiKeyStatusProps from "@/utils/getApiStatusProps";
 import getInitials from "@/utils/getInitials";
 import BaseCard from "@/components/ui/cards/BaseCard";
 
+// 1. Update mock data to support multiple API keys per client
 const fakeClients = [
   {
     id: "1",
@@ -30,11 +35,63 @@ const fakeClients = [
       },
       lastLeadAdded: "2024-12-08T14:30:00Z",
     },
-    apiKeyInfo: {
-      apiKey: "ABCD1234SECRETKEY1",
-      status: "Active",
-      expirationDate: "2025-01-15T00:00:00Z",
-    },
+    apiKeys: [
+      {
+        key: "ABCD1234SECRETKEY1",
+        status: "Active",
+        lastUsed: "2024-12-10T09:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY2",
+        status: "Active",
+        lastUsed: "2024-12-09T08:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY3",
+        status: "Revoked",
+        lastUsed: "2024-11-01T10:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY4",
+        status: "Revoked",
+        lastUsed: "2024-10-01T10:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY5",
+        status: "Active",
+        lastUsed: "2024-12-08T07:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY6",
+        status: "Active",
+        lastUsed: "2024-12-07T06:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY7",
+        status: "Active",
+        lastUsed: "2024-12-06T05:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY8",
+        status: "Revoked",
+        lastUsed: "2024-09-01T10:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY9",
+        status: "Active",
+        lastUsed: "2024-12-05T04:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY10",
+        status: "Active",
+        lastUsed: "2024-12-04T03:00:00Z",
+      },
+      {
+        key: "ABCD1234SECRETKEY11",
+        status: "Revoked",
+        lastUsed: "2024-08-01T10:00:00Z",
+      },
+    ],
     clientAccess: [
       { name: "Sarah Johnson", email: "sarah.johnson@company.com" },
       { name: "Mike Davis", email: "mike.davis@company.com" },
@@ -142,7 +199,6 @@ function ViewClientPage() {
   const { setLabel, setTitle } = usePageContext();
   const { id } = useParams();
   const client = fakeClients.find((c) => c.id === id);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setLabel("Clients");
@@ -347,77 +403,84 @@ function ViewClientPage() {
       {/* API Key Information Card */}
       <BaseCard
         logo={<FiKey className="w-6 h-6" aria-hidden="true" />}
-        title="API Key Information"
+        title="API Keys Information"
         description=""
       >
-        {client.apiKeyInfo ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 items-center mb-6">
-              {/* API Key */}
-              <div>
-                <div className="text-gray-500 text-sm mb-1">API Key</div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="bg-gray-50 border rounded px-3 py-1 text-lg tracking-widest select-all"
-                    aria-label="API Key"
-                    tabIndex={0}
-                  >
-                    {maskApiKey(client.apiKeyInfo.apiKey, 8)}
-                  </span>
-                  <button
-                    className="p-2 rounded border hover:bg-gray-100 focus:outline-none focus:ring"
-                    aria-label="Copy API Key"
-                    tabIndex={0}
-                    onClick={() => {
-                      navigator.clipboard.writeText(client.apiKeyInfo.apiKey);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1200);
-                    }}
-                  >
-                    <FiCopy className="w-5 h-5" />
-                  </button>
-                  {copied && (
-                    <span className="ml-2 text-green-600 text-xs">Copied!</span>
-                  )}
-                </div>
+        {client.apiKeys && client.apiKeys.length > 0 ? (
+          <div className="flex flex-col gap-6">
+            {/* Top Row: Total Keys & Status Badges */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+              {/* Total Keys */}
+              <div className="flex flex-col items-start justify-center mb-2 sm:mb-0">
+                <span className="text-gray-500 font-semibold mb-1">
+                  Total Keys
+                </span>
+                <span className="text-3xl font-bold tracking-tight">
+                  {client.apiKeys.length}
+                </span>
               </div>
-              {/* Status */}
-              <div className="flex flex-col">
-                <div className="text-gray-500 text-sm mb-1">Status</div>
+              {/* Status Badges */}
+              <div className="flex flex-row items-center gap-2 flex-wrap">
+                {/* Active Badge */}
+                <span
+                  className="flex items-center gap-1 bg-black text-white text-sm font-semibold rounded-full px-4 py-1"
+                  aria-label="Active API Keys"
+                  tabIndex={0}
+                >
+                  <FiCheckCircle
+                    className="w-4 h-4 text-white"
+                    aria-hidden="true"
+                  />
+                  {client.apiKeys.filter((k) => k.status === "Active").length}{" "}
+                  Active
+                </span>
+                {/* Revoked Badge */}
+                <span
+                  className="flex items-center gap-1 bg-red-500 text-white text-sm font-semibold rounded-full px-4 py-1"
+                  aria-label="Revoked API Keys"
+                  tabIndex={0}
+                >
+                  <FiXCircle
+                    className="w-4 h-4 text-white"
+                    aria-hidden="true"
+                  />
+                  {client.apiKeys.filter((k) => k.status === "Revoked").length}{" "}
+                  Revoked
+                </span>
+              </div>
+            </div>
+            {/* Last Used Key */}
+            <div className="flex flex-col gap-1">
+              <span className="text-gray-500 font-semibold">Last Used Key</span>
+              <span className="text-lg">
                 {(() => {
-                  const statusProps = getApiKeyStatusProps(
-                    client.apiKeyInfo.status
-                  );
-                  return (
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-3 h-3 rounded-full inline-block ${statusProps.dot}`}
-                        aria-label={statusProps.label}
-                      />
-                      <span
-                        className={`text-xs font-semibold rounded-full px-4 py-1 ${statusProps.pill}`}
-                      >
-                        {statusProps.label}
-                      </span>
-                    </div>
-                  );
+                  const lastUsed = client.apiKeys.reduce<
+                    | { key: string; status: string; lastUsed: string }
+                    | undefined
+                  >((latest, k) => {
+                    if (!latest) return k;
+                    return new Date(k.lastUsed) > new Date(latest.lastUsed)
+                      ? k
+                      : latest;
+                  }, undefined);
+                  return lastUsed
+                    ? new Date(lastUsed.lastUsed).toLocaleString("en-US")
+                    : "-";
                 })()}
-              </div>
+              </span>
             </div>
-            <div className="text-gray-500 text-sm mb-1">Expiration Date</div>
-            <div className="text-lg mb-6">
-              {formatDate(client.apiKeyInfo.expirationDate)}
+            <hr className="my-2 border-gray-200" />
+            <div className="flex justify-start">
+              <button
+                className="flex items-center gap-2 border rounded-lg px-4 py-2 font-medium hover:bg-gray-50 focus:outline-none focus:ring cursor-pointer"
+                aria-label="Manage API Keys"
+                tabIndex={0}
+              >
+                <FiKey className="w-5 h-5" />
+                Manage API Keys
+              </button>
             </div>
-            <hr className="my-6 border-gray-300" />
-            <button
-              className="flex items-center gap-2 border rounded-lg px-4 py-2 font-medium hover:bg-gray-50 focus:outline-none focus:ring cursor-pointer"
-              aria-label="Manage API Keys"
-              tabIndex={0}
-            >
-              <FiKey className="w-5 h-5" />
-              Manage API Keys
-            </button>
-          </>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
             <span className="text-4xl mb-3" aria-hidden="true">
@@ -426,15 +489,6 @@ function ViewClientPage() {
             <div className="text-lg font-semibold mb-1">
               No API key available
             </div>
-            <div className="text-gray-500 mb-4">Generate an API key.</div>
-            <button
-              className="flex items-center gap-2 border rounded-lg px-4 py-2 font-medium hover:bg-gray-50 focus:outline-none focus:ring"
-              aria-label="Generate API Key"
-              tabIndex={0}
-            >
-              <FiKey className="w-5 h-5" />
-              Generate API Key
-            </button>
           </div>
         )}
       </BaseCard>
