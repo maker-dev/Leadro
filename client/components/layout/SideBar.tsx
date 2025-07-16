@@ -55,9 +55,9 @@ const clientNavItems = [
     href: "/client/access-management",
   },
   {
-    label: "Api Key",
+    label: "Api Keys",
     icon: <IoIosKey className="w-5 h-5 text-white" />,
-    href: "/client/api-key",
+    href: "/client/api-keys",
   },
   {
     label: "Settings",

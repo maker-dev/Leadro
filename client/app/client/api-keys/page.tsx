@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { usePageContext } from "@/context/PageTitleContext";
 import StatisticsCard from "@/components/ui/cards/StatisticsCard";
-import BaseCard from "@/components/ui/cards/BaseCard";
 import {
   FaCheckCircle,
   FaTimesCircle,
@@ -11,46 +10,46 @@ import {
 } from "react-icons/fa";
 import { GoKey } from "react-icons/go";
 import { FiKey } from "react-icons/fi";
-import { FiCopy, FiCheck, FiRotateCw, FiTrash2, FiSlash } from "react-icons/fi";
+import { FiCopy, FiCheck, FiTrash2, FiEdit, FiPlus } from "react-icons/fi";
 
-const ViewKeysPage = () => {
+const mockApiKeys = [
+  {
+    label: "API Key 1",
+    key: "sk-mockkey-t92j8f3k2l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0",
+    isRevoked: true,
+    usage: 814,
+    lastUsed: "Jun 27, 2025, 09:39 AM",
+    created: "Jun 9, 2025, 06:36 PM",
+    updated: "Jul 15, 2025, 03:00 PM",
+  },
+  {
+    label: "API Key 2",
+    key: "sk-mockkey-e8y0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2",
+    isRevoked: false,
+    usage: 256,
+    lastUsed: "Never",
+    created: "Jul 5, 2025, 03:04 AM",
+    updated: "Jul 15, 2025, 03:00 PM",
+  },
+  {
+    label: "API Key 3",
+    key: "sk-mockkey-ooqb1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1",
+    isRevoked: false,
+    usage: 390,
+    lastUsed: "Jul 8, 2025, 08:19 PM",
+    created: "Jul 7, 2025, 07:27 AM",
+    updated: "Jul 15, 2025, 03:00 PM",
+  },
+];
+
+const ApiKeysPage = () => {
   const { setLabel, setTitle } = usePageContext();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
     setLabel("Api Keys");
-    setTitle("Manage Api Keys");
+    setTitle("Api Keys");
   }, [setLabel, setTitle]);
-
-  const mockApiKeys = [
-    {
-      label: "API Key 1",
-      key: "sk-mockkey-t92j8f3k2l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0",
-      isRevoked: true,
-      usage: 814,
-      lastUsed: "Jun 27, 2025, 09:39 AM",
-      created: "Jun 9, 2025, 06:36 PM",
-      updated: "Jul 15, 2025, 03:00 PM",
-    },
-    {
-      label: "API Key 2",
-      key: "sk-mockkey-e8y0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2",
-      isRevoked: false,
-      usage: 256,
-      lastUsed: "Never",
-      created: "Jul 5, 2025, 03:04 AM",
-      updated: "Jul 15, 2025, 03:00 PM",
-    },
-    {
-      label: "API Key 3",
-      key: "sk-mockkey-ooqb1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1",
-      isRevoked: false,
-      usage: 390,
-      lastUsed: "Jul 8, 2025, 08:19 PM",
-      created: "Jul 7, 2025, 07:27 AM",
-      updated: "Jul 15, 2025, 03:00 PM",
-    },
-  ];
 
   const handleCopy = (key: string) => {
     navigator.clipboard.writeText(key);
@@ -98,12 +97,27 @@ const ViewKeysPage = () => {
           ariaLabel="Last Key Created"
         />
       </div>
+
       {/* Managing api keys Card */}
-      <BaseCard
-        logo={<GoKey className="w-6 h-6" aria-label="API Key Table" />}
-        title="Client API Keys"
-        description="Manage API keys for the selected client."
-      >
+      <div className="p-8 bg-white rounded-xl border border-gray-200 shadow">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between items-start gap-2 mb-2">
+          <div className="flex items-center">
+            <div className="mr-2">
+              <GoKey className="w-6 h-6" aria-label="API Key Table" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold">Client API Keys</h2>
+          </div>
+          <button
+            className="flex items-center gap-2 bg-black text-white font-medium rounded-lg px-3 py-3 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition text-base w-full md:w-auto mt-2 md:mt-0"
+            tabIndex={0}
+            aria-label="Generate New API Key"
+          >
+            <FiPlus className="w-5 h-5" /> Generate New API Key
+          </button>
+        </div>
+        <p className="text-gray-500 mb-8">
+          Manage your API keys for secure lead access.
+        </p>
         <div className="overflow-x-auto">
           <table
             className="min-w-full text-left"
@@ -157,23 +171,13 @@ const ViewKeysPage = () => {
                   <td className="py-3 px-2">{apiKey.lastUsed}</td>
                   <td className="py-3 px-2">{apiKey.created}</td>
                   <td className="py-3 px-2 flex gap-2">
-                    {apiKey.isRevoked ? (
-                      <button
-                        className="flex items-center gap-2 border border-gray-200 rounded px-4 py-2 font-semibold bg-white hover:bg-gray-50"
-                        tabIndex={0}
-                        aria-label="Activate"
-                      >
-                        <FiRotateCw className="w-4 h-4" /> Activate
-                      </button>
-                    ) : (
-                      <button
-                        className="flex items-center gap-2 border border-gray-200 rounded px-4 py-2 font-semibold bg-white hover:bg-gray-50"
-                        tabIndex={0}
-                        aria-label="Revoke"
-                      >
-                        <FiSlash className="w-4 h-4" /> Revoke
-                      </button>
-                    )}
+                    <button
+                      className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2 font-semibold"
+                      tabIndex={0}
+                      aria-label="Edit Label"
+                    >
+                      <FiEdit className="w-4 h-4" /> Edit
+                    </button>
                     <button
                       className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold"
                       tabIndex={0}
@@ -187,9 +191,9 @@ const ViewKeysPage = () => {
             </tbody>
           </table>
         </div>
-      </BaseCard>
+      </div>
     </div>
   );
 };
 
-export default ViewKeysPage;
+export default ApiKeysPage;
