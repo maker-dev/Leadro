@@ -37,6 +37,7 @@ export default function RootLayout({
     <html lang="en">
       <head></head>
       <body
+        suppressHydrationWarning
         className={twMerge(
           inter.variable,
           jetbrainsMono.variable,
