@@ -1,17 +1,20 @@
 interface StatusCardProps {
   label: string;
-  count: number;
+  value: string;
   icon: React.ReactNode;
-  color?: "blue" | "yellow" | "red" | "green" | "orange";
+  color?: string;
 }
 
 const StatusCard: React.FC<StatusCardProps> = ({
   label,
-  count,
+  value,
   icon,
   color = "blue",
 }) => {
-  const colorClasses = {
+  const colorClasses: Record<
+    string,
+    { text: string; bg: string; line: string; iconBg: string }
+  > = {
     blue: {
       text: "text-blue-600",
       bg: "bg-blue-100",
@@ -42,6 +45,18 @@ const StatusCard: React.FC<StatusCardProps> = ({
       line: "bg-orange-500",
       iconBg: "bg-orange-100",
     },
+    black: {
+      text: "text-black",
+      bg: "bg-gray-200",
+      line: "bg-black",
+      iconBg: "bg-gray-200",
+    },
+    gray: {
+      text: "text-gray-600",
+      bg: "bg-gray-100",
+      line: "bg-gray-400",
+      iconBg: "bg-gray-100",
+    },
   };
 
   const colorSet = colorClasses[color] || {
@@ -55,19 +70,21 @@ const StatusCard: React.FC<StatusCardProps> = ({
     <div
       className="bg-white rounded-xl shadow-sm p-5 min-w-[140px] flex flex-col gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-200"
       tabIndex={0}
-      aria-label={`${label}: ${count}`}
+      aria-label={`${label}: ${value}`}
     >
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium text-gray-500">{label}</span>
         <span className={`h-1 w-8 rounded-full ${colorSet.line}`} />
       </div>
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-2">
         <div
           className={`w-9 h-9 flex items-center justify-center rounded-full ${colorSet.iconBg}`}
         >
           <span className={`${colorSet.text}`}>{icon}</span>
         </div>
-        <span className={`text-3xl font-bold ${colorSet.text}`}>{count}</span>
+        <span className={`text-xl sm:text-2xl font-bold ${colorSet.text}`}>
+          {value}
+        </span>
       </div>
     </div>
   );

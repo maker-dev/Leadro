@@ -2,7 +2,14 @@
 import StatusCard from "@/components/ui/cards/StatusCard";
 import { usePageContext } from "@/context/PageTitleContext";
 import { useEffect } from "react";
-import { FaPlay, FaPause, FaStop, FaCheck, FaFlag } from "react-icons/fa";
+import {
+  FaUsers,
+  FaAddressBook,
+  FaBolt,
+  FaKey,
+  FaBan,
+  FaLayerGroup,
+} from "react-icons/fa";
 
 function DaschboardPage() {
   const { setLabel, setTitle } = usePageContext();
@@ -12,18 +19,47 @@ function DaschboardPage() {
     setTitle("Overview");
   }, [setLabel, setTitle]);
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      <StatusCard label="Active" count={60} icon={<FaPlay />} color="blue" />
-      <StatusCard label="Paused" count={16} icon={<FaPause />} color="yellow" />
-      <StatusCard label="Stopped" count={64} icon={<FaStop />} color="red" />
-      <StatusCard
-        label="Completed"
-        count={64}
-        icon={<FaCheck />}
-        color="green"
-      />
-      <StatusCard label="Flagged" count={18} icon={<FaFlag />} color="orange" />
-    </div>
+    <>
+      {/* Status Cards for admin dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <StatusCard
+          label="Total Clients"
+          value={"12"}
+          icon={<FaUsers />}
+          color="gray"
+        />
+        <StatusCard
+          label="Total Leads"
+          value={"45"}
+          icon={<FaAddressBook />}
+          color="green"
+        />
+        <StatusCard
+          label="APIs Usage Today"
+          value={"320"}
+          icon={<FaBolt />}
+          color="yellow"
+        />
+        <StatusCard
+          label="Total API Keys"
+          value={"10"}
+          icon={<FaLayerGroup />}
+          color="orange"
+        />
+        <StatusCard
+          label="Active API Keys"
+          value={"7"}
+          icon={<FaKey />}
+          color="blue"
+        />
+        <StatusCard
+          label="Revoked API Keys"
+          value={"3"}
+          icon={<FaBan />}
+          color="red"
+        />
+      </div>
+    </>
   );
 }
 
