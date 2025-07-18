@@ -8,6 +8,12 @@ import {
   FaChartBar,
   FaClock,
 } from "react-icons/fa";
+import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import formSchema from "./schemas/CreateKeySchema";
+import type CreateKeyType from "./types/CreateKeyType";
+import EditKeySchema from "./schemas/EditKeySchema";
+import EditKeyType from "./types/EditKeyType";
+import FormModal from "@/components/modals/FormModal";
 import { GoKey } from "react-icons/go";
 import { FiKey } from "react-icons/fi";
 import { FiCopy, FiCheck, FiTrash2, FiEdit, FiPlus } from "react-icons/fi";
@@ -46,6 +52,20 @@ const ApiKeysPage = () => {
   const { setLabel, setTitle } = usePageContext();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // ===================== Delete Modal State =====================
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
+
+  // ===================== Generate API Key Modal State =====================
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // ===================== Edit API Key Modal State =====================
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [keyToEdit, setKeyToEdit] = useState<{
+    key: string;
+    label: string;
+  } | null>(null);
+
   useEffect(() => {
     setLabel("Api Keys");
     setTitle("Api Keys");
@@ -55,6 +75,47 @@ const ApiKeysPage = () => {
     navigator.clipboard.writeText(key);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1200);
+  };
+
+  // ===================== Delete Modal Handlers =====================
+  const handleOpenDeleteModal = (key: string) => {
+    setKeyToDelete(key);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setKeyToDelete(null);
+  };
+
+  const handleConfirmDelete = () => {
+    // For now, just log the deleted key
+    console.log("Deleted API key:", keyToDelete);
+    handleCloseDeleteModal();
+  };
+
+  // ===================== Generate API Key Modal Handlers =====================
+  const handleOpenCreateModal = () => setIsCreateModalOpen(true);
+  const handleCloseCreateModal = () => setIsCreateModalOpen(false);
+  const handleCreateKey = (data: CreateKeyType) => {
+    // For now, just log the label
+    console.log("Create API Key with label:", data.label);
+    handleCloseCreateModal();
+  };
+
+  // ===================== Edit API Key Modal Handlers =====================
+  const handleOpenEditModal = (apiKey: { key: string; label: string }) => {
+    setKeyToEdit(apiKey);
+    setIsEditModalOpen(true);
+  };
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setKeyToEdit(null);
+  };
+  const handleEditKey = (data: EditKeyType) => {
+    // For now, just log the new label
+    console.log("Edit API Key label:", keyToEdit?.key, data.label);
+    handleCloseEditModal();
   };
 
   return (
@@ -111,6 +172,7 @@ const ApiKeysPage = () => {
             className="flex items-center gap-2 bg-black text-white font-medium rounded-lg px-3 py-3 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition text-base w-full md:w-auto mt-2 md:mt-0"
             tabIndex={0}
             aria-label="Generate New API Key"
+            onClick={handleOpenCreateModal}
           >
             <FiPlus className="w-5 h-5" /> Generate New API Key
           </button>
@@ -175,6 +237,12 @@ const ApiKeysPage = () => {
                       className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2 font-semibold"
                       tabIndex={0}
                       aria-label="Edit Label"
+                      onClick={() =>
+                        handleOpenEditModal({
+                          key: apiKey.key,
+                          label: apiKey.label,
+                        })
+                      }
                     >
                       <FiEdit className="w-4 h-4" /> Edit
                     </button>
@@ -182,6 +250,7 @@ const ApiKeysPage = () => {
                       className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold"
                       tabIndex={0}
                       aria-label="Delete"
+                      onClick={() => handleOpenDeleteModal(apiKey.key)}
                     >
                       <FiTrash2 className="w-4 h-4" /> Delete
                     </button>
@@ -192,6 +261,65 @@ const ApiKeysPage = () => {
           </table>
         </div>
       </div>
+
+      {/* ===================== Confirm Delete Modal ===================== */}
+      {isDeleteModalOpen && (
+        <ConfirmDeleteModal
+          isOpen={isDeleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title="Delete API Key"
+          description="Are you sure you want to delete this API key? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+        />
+      )}
+
+      {/* ===================== FormModal for Create API Key ===================== */}
+      {isCreateModalOpen && (
+        <FormModal
+          isOpen={isCreateModalOpen}
+          onClose={handleCloseCreateModal}
+          onSubmit={handleCreateKey}
+          title="Generate New API Key"
+          fields={[
+            {
+              name: "label",
+              label: "Label",
+              type: "text",
+              placeholder: "Enter API key label",
+              required: true,
+            },
+          ]}
+          initialValues={{ label: "" }}
+          validationSchema={formSchema}
+          submitLabel="Generate"
+          cancelLabel="Cancel"
+        />
+      )}
+
+      {/* ===================== FormModal for Edit API Key ===================== */}
+      {isEditModalOpen && keyToEdit && (
+        <FormModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          onSubmit={handleEditKey}
+          title="Edit API Key Label"
+          fields={[
+            {
+              name: "label",
+              label: "Label",
+              type: "text",
+              placeholder: "Enter new label",
+              required: true,
+            },
+          ]}
+          initialValues={{ label: keyToEdit.label }}
+          validationSchema={EditKeySchema}
+          submitLabel="Save"
+          cancelLabel="Cancel"
+        />
+      )}
     </div>
   );
 };
