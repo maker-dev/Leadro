@@ -7,12 +7,16 @@ import type { FormValues } from "./types";
 import TextInput from "@/components/ui/inputs/TextInput";
 import PasswordInput from "@/components/ui/inputs/PasswordInput";
 import SubmitButton from "@/components/ui/buttons/SubmitButton";
+import { registerUser } from "@/services/authService";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    reset,
+    setError,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -24,8 +28,29 @@ export default function RegisterForm() {
     mode: "onBlur",
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log(data);
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await registerUser(data);
+      toast.success(
+        "Registration successful! Please check your email to verify your account."
+      );
+      reset();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
+    }
   };
 
   return (

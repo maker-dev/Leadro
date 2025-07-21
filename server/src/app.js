@@ -1,76 +1,84 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
-import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
-import errorHandler from './middlewares/errorHandler.js';
-import userRoutes from './routes/user.routes.js';
-import leadRoutes from './routes/lead.routes.js';
-import passwordRoutes from './routes/password.routes.js';
-import apikeyRoutes from './routes/apikey.routes.js';
-import clientAccessRoutes from './routes/clientaccess.routes.js';
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import errorHandler from "./middlewares/errorHandler.js";
+import userRoutes from "./routes/user.routes.js";
+import leadRoutes from "./routes/lead.routes.js";
+import passwordRoutes from "./routes/password.routes.js";
+import apikeyRoutes from "./routes/apikey.routes.js";
+import clientAccessRoutes from "./routes/clientaccess.routes.js";
+import dotenv from "dotenv";
+
+//config env
+dotenv.config();
 
 //variables
 const app = express();
 
 // Swagger configuration
 const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'Leadro API Documentation',
-            version: '1.0.0',
-            description: 'API documentation for Leadro application',
-            contact: {
-                name: 'API Support',
-                email: 'support@leadro.com'
-            }
-        },
-        servers: [
-            {
-                url: 'http://localhost:8080',
-                description: 'Development server'
-            }
-        ],
-        components: {
-            securitySchemes: {
-                bearerAuth: {
-                    type: 'http',
-                    scheme: 'bearer',
-                    bearerFormat: 'JWT'
-                }
-            }
-        },
-        security: [{
-            bearerAuth: []
-        }]
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Leadro API Documentation",
+      version: "1.0.0",
+      description: "API documentation for Leadro application",
+      contact: {
+        name: "API Support",
+        email: "support@leadro.com",
+      },
     },
-    apis: ['./src/routes/*.routes.js'] // Path to the API routes
+    servers: [
+      {
+        url: "http://localhost:8080",
+        description: "Development server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ["./src/routes/*.routes.js"], // Path to the API routes
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-
-//middlewares
-app.use(cors({
-    credentials: true
-}));
+//middleware
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Swagger UI setup
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //routes
-app.use('/api/users', userRoutes); 
-app.use('/api/leads', leadRoutes);
-app.use('/api/password', passwordRoutes);
-app.use('/api/apikey', apikeyRoutes);
-app.use('/api/client-access', clientAccessRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/leads", leadRoutes);
+app.use("/api/password", passwordRoutes);
+app.use("/api/apikey", apikeyRoutes);
+app.use("/api/client-access", clientAccessRoutes);
 
 //error handler
 app.use(errorHandler);
 
-export {app}
+export { app };
