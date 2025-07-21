@@ -36,7 +36,7 @@ const NormalSelectInput: React.FC<NormalSelectInputProps> = ({
         name={name}
         required={required}
         className={clsx(
-          "rounded px-4 py-2 h-11 bg-white text-gray-700 border focus:ring-2 focus:border-blue-500 focus:ring-blue-500",
+          "rounded px-4 py-2 h-11 bg-white text-gray-700 border focus:ring-2 focus:border-black/60 focus:ring-black/60 outline-none transition w-full",
           error ? "border-red-500" : "border-gray-300",
           className
         )}

@@ -10,6 +10,12 @@ import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
 import { SubmitHandler } from "react-hook-form";
 import { FiEdit } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
+import LeadSourceOptions from "@/data/leadSourceOptions";
+
+// Get allowed source values
+const allowedSources = LeadSourceOptions.map((opt) => opt.value);
+const getValidSource = (source: any): UpdateLeadFormValues["source"] =>
+  allowedSources.includes(source) ? source : "";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -25,7 +31,7 @@ const fakeLeads = [
     name: "John Doe",
     email: "john@example.com",
     phone: "1234567890",
-    source: "Website",
+    source: "website",
     status: "new",
     createdAt: "2023-01-01",
     extraFields: {
@@ -37,7 +43,7 @@ const fakeLeads = [
     name: "",
     email: "jane@example.com",
     phone: "",
-    source: "Referral",
+    source: "referral",
     status: "contacted",
     createdAt: "2023-01-02",
   },
@@ -46,7 +52,7 @@ const fakeLeads = [
     name: "Alice Smith",
     email: "alice@example.com",
     phone: "9876543210",
-    source: "Ad Campaign",
+    source: "facebook_ads",
     status: "converted",
     createdAt: "2023-01-03",
   },
@@ -64,7 +70,7 @@ const fakeLeads = [
     name: "",
     email: "eve@example.com",
     phone: "5551234567",
-    source: "Website",
+    source: "website",
     status: "new",
     createdAt: "2023-01-05",
   },
@@ -73,7 +79,7 @@ const fakeLeads = [
     name: "Charlie Brown",
     email: "charlie@example.com",
     phone: "",
-    source: "Event",
+    source: "event",
     status: "contacted",
     createdAt: "2023-01-06",
   },
@@ -91,7 +97,7 @@ const fakeLeads = [
     name: "Emily White",
     email: "emily@example.com",
     phone: "4445556666",
-    source: "Referral",
+    source: "cold_call",
     status: "lost",
     createdAt: "2023-01-08",
   },
@@ -131,7 +137,7 @@ const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
           name: lead.name || "",
           email: lead.email || "",
           phone: lead.phone || "",
-          source: lead.source || "",
+          source: getValidSource(lead.source),
           status: getValidStatus(lead.status),
           message: "",
           customFields,
@@ -200,12 +206,15 @@ const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
               placeholder="Enter phone"
               {...register("phone")}
             />
-            <NormalTextInput
+            <NormalSelectInput
               label="Source"
               id="source"
-              type="text"
+              options={[
+                { label: "No Source", value: "" },
+                ...LeadSourceOptions,
+              ]}
               error={errors.source}
-              placeholder="Enter source"
+              required
               {...register("source")}
             />
           </div>

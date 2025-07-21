@@ -114,9 +114,9 @@ const ApiKeysPage = () => {
   );
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
       {/* Filter Card */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <FiFilter className="text-gray-700" size={24} />
@@ -173,7 +173,7 @@ const ApiKeysPage = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filter by status"
               tabIndex={0}
-              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition w-full"
+              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full"
             >
               <option value="all">All</option>
               <option value="active">Only Active Keys</option>

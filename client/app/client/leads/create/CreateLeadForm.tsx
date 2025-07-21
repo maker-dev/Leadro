@@ -9,7 +9,7 @@ import NormalSelectInput from "@/components/ui/inputs/NormalSelectInput";
 import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
 import { FiPlus } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
-
+import LeadSourceOptions from "@/data/leadSourceOptions";
 const statusOptions = [
   { value: "new", label: "New" },
   { value: "contacted", label: "Contacted" },
@@ -90,12 +90,15 @@ const CreateLeadForm = () => {
               placeholder="Enter phone"
               {...register("phone")}
             />
-            <NormalTextInput
+            <NormalSelectInput
               label="Source"
               id="source"
-              type="text"
+              options={[
+                { label: "No Source", value: "" },
+                ...LeadSourceOptions,
+              ]}
               error={errors.source}
-              placeholder="Enter source"
+              required
               {...register("source")}
             />
           </div>

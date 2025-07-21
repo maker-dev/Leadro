@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { LeadSourceValues } from "@/data/leadSourceOptions";
 export const customFieldSchema = z.object({
   label: z.string().min(1, "Custom field label is required"),
   value: z.string().min(1, "Custom field value is required"),
@@ -18,11 +18,8 @@ export const updateLeadFormSchema = z.object({
     .refine((val) => !val || /^\+?\d{7,15}$/.test(val), {
       message: "Invalid phone number",
     }),
-  source: z
-    .string()
-    .min(3, "Source must be at least 3 characters")
-    .or(z.literal(""))
-    .optional(),
+  source: z.enum(LeadSourceValues).or(z.literal("")).optional(),
+
   status: z.enum(["new", "contacted", "converted", "lost"], {
     required_error: "Status is required",
   }),

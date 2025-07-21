@@ -14,6 +14,7 @@ import DropDownSelector, {
   DropDownOption,
 } from "@/components/ui/inputs/DropDownSelector";
 import { useState } from "react";
+import LeadSourceOptions from "@/data/leadSourceOptions";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -210,12 +211,15 @@ const CreateLeadForm = () => {
               placeholder="Enter phone"
               {...register("phone")}
             />
-            <NormalTextInput
+            <NormalSelectInput
               label="Source"
               id="source"
-              type="text"
+              options={[
+                { label: "No Source", value: "" },
+                ...LeadSourceOptions,
+              ]}
               error={errors.source}
-              placeholder="Enter source"
+              required
               {...register("source")}
             />
           </div>

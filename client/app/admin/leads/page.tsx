@@ -15,6 +15,7 @@ import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import ConfirmDownloadModal from "@/components/modals/ConfirmDownloadModal";
 import Link from "next/link";
 import { usePageContext } from "@/context/PageTitleContext";
+import LeadSourceOptions from "@/data/leadSourceOptions";
 
 // Mock data for admin leads
 const fakeLeads = [
@@ -142,6 +143,7 @@ const Leads = () => {
   const [startDate, endDate] = dateRange;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   //ui state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -159,6 +161,7 @@ const Leads = () => {
     console.log({
       searchTerm,
       statusFilter,
+      sourceFilter,
       startDate,
       endDate,
     });
@@ -198,9 +201,9 @@ const Leads = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
       {/* Filter */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <FiFilter className="text-gray-700" size={24} />
@@ -256,13 +259,39 @@ const Leads = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filter by status"
               tabIndex={0}
-              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-gray-400 transition w-full"
+              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full"
             >
               <option value="all">All Statuses</option>
               <option value="new">New</option>
               <option value="contacted">Contacted</option>
               <option value="converted">Converted</option>
               <option value="lost">Lost</option>
+            </select>
+          </div>
+          {/* Source Dropdown */}
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="source-filter"
+            >
+              Source
+            </label>
+            <select
+              id="source-filter"
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              aria-label="Filter by source"
+              tabIndex={0}
+              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full"
+            >
+              <option value={"all"}>All Sources</option>
+              {LeadSourceOptions.map(({ label, value }) => {
+                return (
+                  <option value={value} key={value}>
+                    {label}
+                  </option>
+                );
+              })}
             </select>
           </div>
           {/* Date Range: From */}
@@ -342,6 +371,7 @@ const Leads = () => {
               onClick={() => {
                 setSearchTerm("");
                 setStatusFilter("all");
+                setSourceFilter("all");
                 setDateRange([null, null]);
               }}
             >
