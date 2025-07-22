@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { twMerge } from "tailwind-merge";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -45,7 +46,7 @@ export default function RootLayout({
           "antialiased scroll-smooth"
         )}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Toaster />
       </body>
     </html>

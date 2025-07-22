@@ -84,10 +84,65 @@ const clientVerifyEmail = async (req, res) => {
   }
 };
 
-const clientLogin = async (req, res) => {
+const resendVerificationEmail = async (req, res) => {
   try {
-    // User is already validated and fetched in validation middleware
-    const user = req.user;
+    const user = req.user; // User is now available from validation middleware
+
+    // Generate new email verification token
+    const emailVerificationToken = jwt.sign(
+      { userId: user._id },
+      process.env.EMAIL_SECRET,
+      { expiresIn: "20h" }
+    );
+
+    const emailVerificationUrl = `${process.env.BACKEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+
+    // Send new verification email
+    await sendEmail({
+      to: user.email,
+      subject: "Email Verification - New Link",
+      html: `Click <a href="${emailVerificationUrl}">here</a> to verify your email`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Verification email has been resent",
+    });
+  } catch (error) {
+    console.error("Resend verification email error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+//Admin APIS
+
+const getAllClients = async (req, res) => {
+  try {
+    // Find all users with client role, excluding password
+    const clients = await User.find({ role: "client" }).select("-password");
+
+    res.status(200).json({
+      success: true,
+      count: clients.length,
+      data: clients,
+    });
+  } catch (error) {
+    console.error("Get all clients error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+//Hybrid APIS
+
+const login = async (req, res) => {
+  try {
+    const user = req.user; // Already validated and fetched
 
     // Generate JWT tokens
     const token = jwt.sign(
@@ -101,9 +156,12 @@ const clientLogin = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // Remove password from response
+    // Remove password before sending response
     const userResponse = user.toObject();
     delete userResponse.password;
+
+    // Customize message by role
+    const message = "Login successful";
 
     res
       .cookie("refreshToken", refreshToken, {
@@ -114,7 +172,7 @@ const clientLogin = async (req, res) => {
       })
       .json({
         success: true,
-        message: "Login successful",
+        message,
         token,
         data: userResponse,
       });
@@ -181,8 +239,6 @@ const refreshToken = async (req, res) => {
   }
 };
 
-//Profile API (unified for both client and admin)
-
 const getProfile = async (req, res) => {
   try {
     const user = req.user;
@@ -202,111 +258,11 @@ const getProfile = async (req, res) => {
   }
 };
 
-//Admin APIS
-
-const adminLogin = async (req, res) => {
-  try {
-    // User is already validated and fetched in validation middleware
-    const user = req.user;
-
-    // Generate JWT token with admin flag
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-    const refreshToken = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res
-      .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
-      .json({
-        success: true,
-        message: "Admin login successful",
-        token,
-        data: userResponse,
-      });
-  } catch (error) {
-    console.error("Admin login error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-const getAllClients = async (req, res) => {
-  try {
-    // Find all users with client role, excluding password
-    const clients = await User.find({ role: "client" }).select("-password");
-
-    res.status(200).json({
-      success: true,
-      count: clients.length,
-      data: clients,
-    });
-  } catch (error) {
-    console.error("Get all clients error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-// Email verification API (unified for both client and admin)
-
-const resendVerificationEmail = async (req, res) => {
-  try {
-    const user = req.user; // User is now available from validation middleware
-
-    // Generate new email verification token
-    const emailVerificationToken = jwt.sign(
-      { userId: user._id },
-      process.env.EMAIL_SECRET,
-      { expiresIn: "20h" }
-    );
-
-    const emailVerificationUrl = `${process.env.BACKEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
-
-    // Send new verification email
-    await sendEmail({
-      to: user.email,
-      subject: "Email Verification - New Link",
-      html: `Click <a href="${emailVerificationUrl}">here</a> to verify your email`,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Verification email has been resent",
-    });
-  } catch (error) {
-    console.error("Resend verification email error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
 export {
   clientRegister,
-  clientLogin,
+  login,
   refreshToken,
   getProfile,
-  adminLogin,
   getAllClients,
   clientVerifyEmail,
   resendVerificationEmail,

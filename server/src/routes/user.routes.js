@@ -1,9 +1,22 @@
-import express from 'express'
-import validate from '../middlewares/validate.js';
-import verifyToken from '../middlewares/verifyToken.js';
-import verifyRole from '../middlewares/verifyRole.js';
-import { clientRegister, clientLogin, adminLogin, getProfile, getAllClients, clientVerifyEmail, resendVerificationEmail, refreshToken } from '../controllers/user.controller.js';
-import { ClientRegisterValidation, ClientLoginValidation, AdminLoginValidation, ProfileValidation, ResendVerificationEmailValidation } from '../middlewares/validation/UserValidation.js';
+import express from "express";
+import validate from "../middlewares/validate.js";
+import verifyToken from "../middlewares/verifyToken.js";
+import verifyRole from "../middlewares/verifyRole.js";
+import {
+  clientRegister,
+  getProfile,
+  getAllClients,
+  clientVerifyEmail,
+  resendVerificationEmail,
+  refreshToken,
+  login,
+} from "../controllers/user.controller.js";
+import {
+  ClientRegisterValidation,
+  ProfileValidation,
+  ResendVerificationEmailValidation,
+  LoginValidation,
+} from "../middlewares/validation/UserValidation.js";
 
 const router = express.Router();
 
@@ -120,7 +133,12 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/client/register', ClientRegisterValidation, validate, clientRegister);
+router.post(
+  "/client/register",
+  ClientRegisterValidation,
+  validate,
+  clientRegister
+);
 
 /**
  * @swagger
@@ -165,7 +183,7 @@ router.post('/client/register', ClientRegisterValidation, validate, clientRegist
  *       500:
  *         description: Server error
  */
-router.get('/client/verify-email', clientVerifyEmail);
+router.get("/client/verify-email", clientVerifyEmail);
 
 /**
  * @swagger
@@ -222,13 +240,18 @@ router.get('/client/verify-email', clientVerifyEmail);
  *       500:
  *         description: Server error
  */
-router.post('/client/resend-verification', ResendVerificationEmailValidation, validate, resendVerificationEmail);
+router.post(
+  "/client/resend-verification",
+  ResendVerificationEmailValidation,
+  validate,
+  resendVerificationEmail
+);
 
 /**
  * @swagger
- * /api/users/client/login:
+ * /api/users/login:
  *   post:
- *     summary: Client login
+ *     summary: Log in a user (admin or client)
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -243,20 +266,15 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email address of the account
- *                 example: "john@example.com"
+ *                 description: User's email address
+ *                 example: "admin@example.com"
  *               password:
  *                 type: string
- *                 description: Account password
+ *                 description: User's password
  *                 example: "Password123"
  *     responses:
  *       200:
- *         description: Login successful. An `httpOnly` cookie named `refreshToken` is set.
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: "refreshToken=...; Path=/; HttpOnly; Secure; SameSite=Strict"
+ *         description: Login successful
  *         content:
  *           application/json:
  *             schema:
@@ -268,38 +286,36 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *                 message:
  *                   type: string
  *                   example: "Login successful"
+ *                 token:
+ *                   type: string
+ *                   description: Access token (JWT)
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *                 data:
  *                   type: object
  *                   properties:
- *                     token:
+ *                     _id:
  *                       type: string
- *                       description: JWT authentication token
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                     user:
- *                       type: object
- *                       properties:
- *                         _id:
- *                           type: string
- *                           description: User ID
- *                           example: "60d21b4667d0d8992e610c85"
- *                         name:
- *                           type: string
- *                           description: Full name of the user
- *                           example: "John Doe"
- *                         email:
- *                           type: string
- *                           description: Email address of the user
- *                           example: "john@example.com"
- *                         role:
- *                           type: string
- *                           description: User role
- *                           example: "client"
- *                         isEmailVerified:
- *                           type: boolean
- *                           description: Whether the email has been verified
- *                           example: true
- *       400:
- *         description: Validation error
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "john@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "admin"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Invalid email or password
  *         content:
  *           application/json:
  *             schema:
@@ -310,18 +326,78 @@ router.post('/client/resend-verification', ResendVerificationEmailValidation, va
  *                   example: false
  *                 message:
  *                   type: string
- *                   example: "Validation error"
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["Invalid email format"]
- *       401:
- *         description: Invalid credentials
+ *                   example: "Invalid credentials"
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
  */
-router.post('/client/login', ClientLoginValidation, validate, clientLogin);
+router.post("/login", LoginValidation, validate, login);
+
+/**
+ * @swagger
+ * /api/users/refresh-token:
+ *   post:
+ *     summary: Refresh JWT access token
+ *     tags: [Users]
+ *     description: Obtains a new JWT access token by providing a valid refresh token. The refresh token should be sent as an `httpOnly` cookie named 'refreshToken'.
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Token refreshed successfully"
+ *                 token:
+ *                   type: string
+ *                   description: A new JWT access token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       401:
+ *         description: Unauthorized. Refresh token is missing.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Refresh token not found. Please log in."
+ *       403:
+ *         description: Forbidden. The refresh token is invalid or expired.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid or expired refresh token. Please log in again."
+ *       500:
+ *         description: Internal server error.
+ */
+router.post("/refresh-token", refreshToken);
 
 /**
  * @swagger
@@ -378,158 +454,7 @@ router.post('/client/login', ClientLoginValidation, validate, clientLogin);
  *       500:
  *         description: Server error
  */
-router.get('/profile', verifyToken, ProfileValidation, validate, getProfile);
-
-/**
- * @swagger
- * /api/users/refresh-token:
- *   post:
- *     summary: Refresh JWT access token
- *     tags: [Users]
- *     description: Obtains a new JWT access token by providing a valid refresh token. The refresh token should be sent as an `httpOnly` cookie named 'refreshToken'.
- *     responses:
- *       200:
- *         description: Access token refreshed successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Token refreshed successfully"
- *                 token:
- *                   type: string
- *                   description: A new JWT access token.
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *       401:
- *         description: Unauthorized. Refresh token is missing.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Refresh token not found. Please log in."
- *       403:
- *         description: Forbidden. The refresh token is invalid or expired.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Invalid or expired refresh token. Please log in again."
- *       500:
- *         description: Internal server error.
- */
-router.post('/refresh-token', refreshToken);
-
-/**
- * @swagger
- * /api/users/admin/login:
- *   post:
- *     summary: Admin login
- *     tags: [Users]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: Admin email address
- *                 example: "admin@example.com"
- *               password:
- *                 type: string
- *                 description: Admin password
- *                 example: "AdminPass123"
- *     responses:
- *       200:
- *         description: Login successful. An `httpOnly` cookie named `refreshToken` is set.
- *         headers:
- *           Set-Cookie:
- *             schema:
- *               type: string
- *               example: "refreshToken=...; Path=/; HttpOnly; Secure; SameSite=Strict"
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Login successful"
- *                 data:
- *                   type: object
- *                   properties:
- *                     token:
- *                       type: string
- *                       description: JWT authentication token
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                     user:
- *                       type: object
- *                       properties:
- *                         _id:
- *                           type: string
- *                           description: User ID
- *                           example: "60d21b4667d0d8992e610c85"
- *                         name:
- *                           type: string
- *                           description: Full name of the admin
- *                           example: "Admin User"
- *                         email:
- *                           type: string
- *                           description: Email address of the admin
- *                           example: "admin@example.com"
- *                         role:
- *                           type: string
- *                           description: User role
- *                           example: "admin"
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Validation error"
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["Invalid email format"]
- *       401:
- *         description: Invalid credentials
- *       500:
- *         description: Server error
- */
-router.post('/admin/login', AdminLoginValidation, validate, adminLogin);
+router.get("/profile", verifyToken, ProfileValidation, validate, getProfile);
 
 /**
  * @swagger
@@ -591,6 +516,6 @@ router.post('/admin/login', AdminLoginValidation, validate, adminLogin);
  *       500:
  *         description: Server error
  */
-router.get('/admin/clients', verifyToken, verifyRole(['admin']), getAllClients);
+router.get("/admin/clients", verifyToken, verifyRole(["admin"]), getAllClients);
 
 export default router;

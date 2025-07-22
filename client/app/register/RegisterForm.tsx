@@ -7,8 +7,8 @@ import type { FormValues } from "./types";
 import TextInput from "@/components/ui/inputs/TextInput";
 import PasswordInput from "@/components/ui/inputs/PasswordInput";
 import SubmitButton from "@/components/ui/buttons/SubmitButton";
-import { registerUser } from "@/services/authService";
 import { toast } from "sonner";
+import { registerUser } from "@/services/AuthService";
 
 export default function RegisterForm() {
   const {
