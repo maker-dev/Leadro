@@ -4,6 +4,7 @@ import { twMerge } from "tailwind-merge";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import RedirectIfAuthenticated from "@/components/redirect/RedirectIfAuthenticated";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -46,7 +47,10 @@ export default function RootLayout({
           "antialiased scroll-smooth"
         )}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <RedirectIfAuthenticated />
+        </AuthProvider>
         <Toaster />
       </body>
     </html>

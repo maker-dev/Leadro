@@ -49,6 +49,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         // Refresh token failed: clear token and reject
         localStorage.removeItem("accessToken");
+        window.location.href = "/login"; // force redirect to login page
         return Promise.reject(refreshError);
       }
     }

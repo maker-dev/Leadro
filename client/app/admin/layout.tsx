@@ -7,12 +7,15 @@ import {
   PageContextProvider,
   usePageContext,
 } from "@/context/PageTitleContext";
+import AuthGuard from "@/components/guards/AuthGuard";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <PageContextProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </PageContextProvider>
+    <AuthGuard allowedRoles={["admin"]}>
+      <PageContextProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </PageContextProvider>
+    </AuthGuard>
   );
 }
 
