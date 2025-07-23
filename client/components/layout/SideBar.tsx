@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Link from "next/link";
 import {
@@ -9,6 +10,7 @@ import {
   IoIosLock,
 } from "react-icons/io";
 import { LuLogOut } from "react-icons/lu";
+import { useAuth } from "@/context/AuthContext";
 
 const adminNavItems = [
   {
@@ -80,9 +82,11 @@ const SideBar: React.FC<SideBarProps> = ({
   role,
 }) => {
   const navItems = role === "admin" ? adminNavItems : clientNavItems;
-  const logOut = () => {
-    console.log("logout");
+  const { logout } = useAuth();
+  const logOut = async () => {
+    logout();
   };
+
   return (
     <>
       {/* ✅ CHANGE: Overlay for mobile */}

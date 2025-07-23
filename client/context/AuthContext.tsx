@@ -8,6 +8,9 @@ import React, {
   ReactNode,
 } from "react";
 import { jwtDecode } from "jwt-decode";
+import { logoutUser } from "@/services/AuthService";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface AuthContextType {
   token: string | null;
@@ -23,7 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setTokenState] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const router = useRouter();
   // Helper: decode role from JWT
   const decodeRoleFromToken = (token: string): string | null => {
     try {
@@ -50,8 +53,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Logout function clears token and role
   const logout = async () => {
-    setToken(null);
-    // optionally call logout API to clear cookie
+    try {
+      setLoading(true);
+      await logoutUser();
+      setToken(null);
+      router.push("/login");
+    } catch (error) {
+      toast.error("Logout failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // On mount: load token from localStorage

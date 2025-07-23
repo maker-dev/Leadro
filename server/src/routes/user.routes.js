@@ -10,6 +10,7 @@ import {
   resendVerificationEmail,
   refreshToken,
   login,
+  logout,
 } from "../controllers/user.controller.js";
 import {
   ClientRegisterValidation,
@@ -398,6 +399,33 @@ router.post("/login", LoginValidation, validate, login);
  *         description: Internal server error.
  */
 router.post("/refresh-token", refreshToken);
+
+/**
+ * @swagger
+ * /api/users/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logout successful"
+ *       500:
+ *         description: Server error
+ */
+router.post("/logout", verifyToken, logout);
 
 /**
  * @swagger
