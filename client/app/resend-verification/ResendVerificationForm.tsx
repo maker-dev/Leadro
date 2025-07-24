@@ -7,6 +7,8 @@ import SubmitButton from "@/components/ui/buttons/SubmitButton";
 import { FormValues } from "./types";
 import { formSchema } from "./schema";
 import { useEffect, useState } from "react";
+import { resendVerificationEmail } from "@/services/AuthService";
+import { toast } from "sonner";
 
 export default function ResendVerificationForm() {
   const [cooldown, setCooldown] = useState(0);
@@ -14,6 +16,8 @@ export default function ResendVerificationForm() {
   const {
     register,
     handleSubmit,
+    reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -33,9 +37,30 @@ export default function ResendVerificationForm() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  const onSubmit = (data: FormValues) => {
-    console.log(data);
-    setCooldown(30);
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await resendVerificationEmail(data);
+      toast.success("Verification email has been resent");
+      setCooldown(120);
+      reset();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error(
+          "Resend verification email failed. Please try again later."
+        );
+      }
+    }
   };
 
   const isButtonDisabled = isSubmitting || cooldown > 0;
