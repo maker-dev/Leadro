@@ -11,6 +11,7 @@ import { jwtDecode } from "jwt-decode";
 import { logoutUser } from "@/services/AuthService";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useUser } from "@/context/UserContext";
 
 interface AuthContextType {
   token: string | null;
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setTokenState] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { setUser, fetchUserProfile } = useUser();
   const router = useRouter();
   // Helper: decode role from JWT
   const decodeRoleFromToken = (token: string): string | null => {
@@ -57,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       await logoutUser();
       setToken(null);
+      setUser(null);
       router.push("/login");
     } catch (error) {
       toast.error("Logout failed");
@@ -67,11 +70,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // On mount: load token from localStorage
   useEffect(() => {
-    const savedToken = localStorage.getItem("accessToken");
-    if (savedToken) {
-      setToken(savedToken); // uses our setter with role decode
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem("accessToken");
+      if (savedToken) {
+        setToken(savedToken); // uses our setter with role decode
+        await fetchUserProfile();
+      }
+      setLoading(false);
+    };
+    initializeAuth();
   }, []);
 
   return (

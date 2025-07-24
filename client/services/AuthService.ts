@@ -60,3 +60,8 @@ export const resetPassword = async (data: ResetPasswordPayload) => {
   });
   return response.data;
 };
+
+export const getProfile = async () => {
+  const response = await axios.get("/users/profile");
+  return response.data;
+};

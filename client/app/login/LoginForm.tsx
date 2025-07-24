@@ -12,9 +12,11 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { loginUser } from "@/services/AuthService";
+import { useUser } from "@/context/UserContext";
 
 export default function LoginForm() {
   const { setToken } = useAuth();
+  const { setUser } = useUser();
   const router = useRouter();
   const {
     register,
@@ -35,6 +37,12 @@ export default function LoginForm() {
     try {
       const res = await loginUser(data);
       setToken(res.token);
+      setUser({
+        _id: res.data._id,
+        name: res.data.name,
+        email: res.data.email,
+        role: res.data.role,
+      });
       toast.success("Login successful!");
       reset();
       if (res.data.role === "client") {

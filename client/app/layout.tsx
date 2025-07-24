@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import RedirectIfAuthenticated from "@/components/redirect/RedirectIfAuthenticated";
+import { UserProvider } from "@/context/UserContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -47,10 +48,12 @@ export default function RootLayout({
           "antialiased scroll-smooth"
         )}
       >
-        <AuthProvider>
-          {children}
-          <RedirectIfAuthenticated />
-        </AuthProvider>
+        <UserProvider>
+          <AuthProvider>
+            {children}
+            <RedirectIfAuthenticated />
+          </AuthProvider>
+        </UserProvider>
         <Toaster />
       </body>
     </html>

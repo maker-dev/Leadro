@@ -8,6 +8,7 @@ import {
   usePageContext,
 } from "@/context/PageTitleContext";
 import AuthGuard from "@/components/guards/AuthGuard";
+import { useUser } from "@/context/UserContext";
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,7 +23,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
 function LayoutContent({ children }: { children: ReactNode }) {
   const [isLeftBarOpen, setIsLeftBarOpen] = useState(false);
   const { title, label } = usePageContext();
-
+  const { user } = useUser();
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -37,7 +38,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         {/* Header */}
         <Header
           title={title}
-          username="mikari alias"
+          username={user?.name || ""}
           onMenuClick={() => setIsLeftBarOpen(!isLeftBarOpen)}
         />
 
