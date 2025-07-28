@@ -2,6 +2,9 @@ import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";
+import ApiKey from "../models/ApiKey.js";
+import ClientAccess from "../models/ClientAccess.js";
+import Lead from "../models/Lead.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -278,6 +281,68 @@ const logout = async (req, res) => {
   }
 };
 
+const changeName = async (req, res) => {
+  try {
+    const user = req.user;
+
+    const { name } = req.body;
+
+    // Update the user's name
+    user.name = name;
+    await user.save();
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: "Name updated successfully",
+      data: userResponse,
+    });
+  } catch (error) {
+    console.error("Change name error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Delete all API keys belonging to the user
+    await ApiKey.deleteMany({ clientId: userId });
+
+    // Delete all ClientAccess where user is owner or sharedWith
+    await ClientAccess.deleteMany({
+      $or: [{ ownerId: userId }, { sharedWithId: userId }],
+    });
+
+    // Delete all Leads owned by the user
+    await Lead.deleteMany({ ownerId: userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+    });
+    res.status(200).json({
+      success: true,
+      message: "Account and all related data deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 export {
   clientRegister,
   login,
@@ -287,4 +352,6 @@ export {
   clientVerifyEmail,
   resendVerificationEmail,
   logout,
+  changeName,
+  deleteAccount,
 };

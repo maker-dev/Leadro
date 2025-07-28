@@ -1,8 +1,9 @@
 import { body, param } from "express-validator";
 import User from "../../models/User.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
-export const forgotPasswordValidation = [
+const forgotPasswordValidation = [
   body("email")
     .trim()
     .notEmpty()
@@ -23,7 +24,7 @@ export const forgotPasswordValidation = [
     }),
 ];
 
-export const resetPasswordValidation = [
+const resetPasswordValidation = [
   param("token")
     .trim()
     .notEmpty()
@@ -71,7 +72,51 @@ export const resetPasswordValidation = [
     }),
 ];
 
-export default {
+const changePasswordValidation = [
+  body("newPassword")
+    .trim()
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 8 })
+    .withMessage("New password must be at least 8 characters long")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]/)
+    .withMessage(
+      "New password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
+  body("confirmNewPassword")
+    .trim()
+    .notEmpty()
+    .withMessage("Confirm new password is required")
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error("New password does not match");
+      }
+      return true;
+    }),
+  body().custom(async (_, { req }) => {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if new password is different from current password
+    const isSamePassword = await bcrypt.compare(
+      req.body.newPassword,
+      user.password
+    );
+    if (isSamePassword) {
+      throw new Error(
+        "New password must be different from your current password"
+      );
+    }
+
+    req.user = user;
+    return true;
+  }),
+];
+
+export {
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
 };

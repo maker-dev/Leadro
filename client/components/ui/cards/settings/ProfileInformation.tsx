@@ -1,16 +1,17 @@
 import React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormSetError } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import formSchema from "./schemas/UpdtProfileInfoSchema";
 import FormValues from "./types/UpdtProfileInfoType";
 import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
 import { FiUser, FiShield, FiSave } from "react-icons/fi";
 import { RiUserSettingsLine } from "react-icons/ri";
+import { FaSpinner } from "react-icons/fa";
 import BaseCard from "../BaseCard";
 
 interface ProfileInformationProps {
   initialValues: { name: string; email: string };
-  onSubmit: (data: FormValues) => void;
+  onSubmit: (data: FormValues, setError: UseFormSetError<FormValues>) => void;
   role: "Admin" | "Client";
 }
 
@@ -22,6 +23,7 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -30,8 +32,7 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
   });
 
   const handleFormSubmit = (data: FormValues) => {
-    onSubmit(data);
-    // Optionally reset or keep as is
+    onSubmit(data, setError);
   };
 
   return (
@@ -94,8 +95,15 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
               aria-label="Save Changes"
               tabIndex={0}
             >
-              <FiSave className="w-5 h-5" aria-hidden="true" />
-              Save Changes
+              {isSubmitting ? (
+                <FaSpinner
+                  className="w-5 h-5 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <FiSave className="w-5 h-5" aria-hidden="true" />
+              )}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

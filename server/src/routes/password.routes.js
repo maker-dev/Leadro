@@ -1,7 +1,16 @@
-import express from 'express';
-import validate from '../middlewares/validate.js';
-import { forgotPassword, resetPassword } from '../controllers/password.controller.js';
-import { forgotPasswordValidation, resetPasswordValidation } from '../middlewares/validation/PasswordValidation.js';
+import express from "express";
+import validate from "../middlewares/validate.js";
+import {
+  forgotPassword,
+  resetPassword,
+  changePassword,
+} from "../controllers/password.controller.js";
+import {
+  forgotPasswordValidation,
+  resetPasswordValidation,
+  changePasswordValidation,
+} from "../middlewares/validation/PasswordValidation.js";
+import verifyToken from "../middlewares/verifyToken.js";
 
 const router = express.Router();
 
@@ -69,7 +78,12 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/forgot-password', forgotPasswordValidation, validate, forgotPassword);
+router.post(
+  "/forgot-password",
+  forgotPasswordValidation,
+  validate,
+  forgotPassword
+);
 
 /**
  * @swagger
@@ -141,6 +155,91 @@ router.post('/forgot-password', forgotPasswordValidation, validate, forgotPasswo
  *       500:
  *         description: Server error
  */
-router.post('/reset-password/:token', resetPasswordValidation, validate, resetPassword);
+router.post(
+  "/reset-password/:token",
+  resetPasswordValidation,
+  validate,
+  resetPassword
+);
 
+/**
+ * @swagger
+ * /api/password/change-password:
+ *   patch:
+ *     summary: Change the authenticated user's password
+ *     tags: [Password]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPassword
+ *               - confirmNewPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]'
+ *                 description: New password (must contain at least one uppercase letter, one lowercase letter, and one number)
+ *                 example: "NewPassword123"
+ *               confirmNewPassword:
+ *                 type: string
+ *                 description: Confirm new password (must match newPassword)
+ *                 example: "NewPassword123"
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "Jane Smith"
+ *                     email:
+ *                       type: string
+ *                       example: "jane@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.patch(
+  "/change-password",
+  verifyToken,
+  changePasswordValidation,
+  validate,
+  changePassword
+);
 export default router;

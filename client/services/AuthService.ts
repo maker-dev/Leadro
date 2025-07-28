@@ -26,6 +26,11 @@ interface ResetPasswordPayload {
   confirmPassword: string;
 }
 
+interface ChangePasswordPayload {
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
 export const registerUser = async (data: RegisterPayload) => {
   const response = await axios.post("/users/client/register", data);
   return response.data;
@@ -61,7 +66,7 @@ export const resetPassword = async (data: ResetPasswordPayload) => {
   return response.data;
 };
 
-export const getProfile = async () => {
-  const response = await axios.get("/users/profile");
+export const changePassword = async (data: ChangePasswordPayload) => {
+  const response = await axios.patch("/password/change-password", data);
   return response.data;
 };

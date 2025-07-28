@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { getProfile } from "@/services/AuthService";
+import { getProfile } from "@/services/ProfileService";
 
 interface User {
   _id: string;

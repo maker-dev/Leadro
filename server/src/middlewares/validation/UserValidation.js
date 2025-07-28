@@ -138,9 +138,30 @@ const ResendVerificationEmailValidation = [
     }),
 ];
 
+// Validation rules for changing user name
+const ChangeNameValidation = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .matches(/^[A-Za-z\s]+$/)
+    .withMessage("Name must contain only letters")
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Name must be between 3 and 50 characters"),
+  body().custom(async (_, { req }) => {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    req.user = user;
+    return true;
+  }),
+];
+
 export {
   ClientRegisterValidation,
   LoginValidation,
   ProfileValidation,
   ResendVerificationEmailValidation,
+  ChangeNameValidation,
 };

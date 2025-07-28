@@ -1,21 +1,23 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import sendEmail from '../utils/sendEmail.js';
-import User from '../models/User.js';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import sendEmail from "../utils/sendEmail.js";
+import User from "../models/User.js";
 
 const forgotPassword = async (req, res) => {
-    try {
-        // User is already validated and attached to request by middleware
-        const user = req.user;
+  try {
+    // User is already validated and attached to request by middleware
+    const user = req.user;
 
-        // Generate password reset token
-        const resetToken = jwt.sign({ id: user._id }, process.env.RESET_SECRET, { expiresIn: '1h' });
+    // Generate password reset token
+    const resetToken = jwt.sign({ id: user._id }, process.env.RESET_SECRET, {
+      expiresIn: "1h",
+    });
 
-        // Create reset URL
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    // Create reset URL
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-        // Create email content
-        const emailContent = `
+    // Create email content
+    const emailContent = `
             <h1>Password Reset Request</h1>
             <p>You requested to reset your password. Click the link below to reset it:</p>
             <a href="${resetUrl}">Reset Password</a>
@@ -23,57 +25,85 @@ const forgotPassword = async (req, res) => {
             <p>If you didn't request this, please ignore this email.</p>
         `;
 
-        // Send email
-        await sendEmail({
-            to: user.email,
-            subject: 'Password Reset Request',
-            html: emailContent
-        });
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset Request",
+      html: emailContent,
+    });
 
-        res.status(200).json({
-            success: true,
-            message: 'Password reset link sent to your email'
-        });
-
-    } catch (error) {
-        console.error('Forgot password error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to process password reset request'
-        });
-    }
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process password reset request",
+    });
+  }
 };
 
 const resetPassword = async (req, res) => {
-    try {
-        // User and password are already validated by middleware
-        const { password } = req.body;
-        const user = req.user;
+  try {
+    // User and password are already validated by middleware
+    const { password } = req.body;
+    const user = req.user;
 
-        // Hash the new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Update user's password
-        await User.findByIdAndUpdate(user._id, {
-            password: hashedPassword
-        });
+    // Update user's password
+    await User.findByIdAndUpdate(user._id, {
+      password: hashedPassword,
+    });
 
-        res.status(200).json({
-            success: true,
-            message: 'Password has been reset successfully'
-        });
-
-    } catch (error) {
-        console.error('Reset password error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to reset password'
-        });
-    }
+    res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to reset password",
+    });
+  }
 };
 
-export {
-    forgotPassword,
-    resetPassword
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { newPassword } = req.body;
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update the user's password
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { password: hashedPassword },
+      { new: true, runValidators: true }
+    );
+
+    const userResponse = updatedUser.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+      data: userResponse,
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 };
+
+export { forgotPassword, resetPassword, changePassword };

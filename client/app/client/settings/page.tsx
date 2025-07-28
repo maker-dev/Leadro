@@ -5,23 +5,83 @@ import ProfileInformation from "@/components/ui/cards/settings/ProfileInformatio
 import ChangePassword from "@/components/ui/cards/settings/ChangePassword";
 import AccountManagement from "@/components/ui/cards/settings/AccountManagement";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import { useUser } from "@/context/UserContext";
+import { updateName } from "@/services/ProfileService";
+import { toast } from "sonner";
+import UpdateProfileInfoType from "@/components/ui/cards/settings/types/UpdtProfileInfoType";
+import ChangePasswordType from "@/components/ui/cards/settings/types/ChangePasswordType";
+import { UseFormSetError } from "react-hook-form";
+import { changePassword } from "@/services/AuthService";
 
 function SettingsPage() {
   const { setLabel, setTitle } = usePageContext();
+  const { user, setUser } = useUser();
 
   useEffect(() => {
     setLabel("Settings");
     setTitle("Settings");
   }, [setLabel, setTitle]);
 
-  const handleProfileSubmit = (data: { name: string }) => {
-    // For now, just log the data
-    console.log("Profile submitted:", data);
+  const handleProfileSubmit = async (
+    data: UpdateProfileInfoType,
+    setError: UseFormSetError<UpdateProfileInfoType>
+  ) => {
+    try {
+      const res = await updateName(data);
+      setUser({
+        _id: user?._id || "",
+        name: res.data.name || "",
+        email: user?.email || "",
+        role: user?.role || "client",
+      });
+      toast.success("Name updated successfully");
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field as keyof UpdateProfileInfoType, {
+              type: "server",
+              message: err.message,
+            });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Name update failed. Please try again.");
+      }
+    }
   };
 
-  const handleChangePasswordSubmit = (data: any) => {
-    // For now, just log the data
-    console.log("Password changed:", data);
+  const handleChangePasswordSubmit = async (
+    data: ChangePasswordType,
+    setError: UseFormSetError<ChangePasswordType>
+  ) => {
+    try {
+      await changePassword(data);
+      toast.success("Password updated successfully");
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field as keyof ChangePasswordType, {
+              type: "server",
+              message: err.message,
+            });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Password update failed. Please try again.");
+      }
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -44,7 +104,7 @@ function SettingsPage() {
     <div className="max-w-5xl mx-auto space-y-8">
       <ProfileInformation
         role="Client"
-        initialValues={{ name: "John Doe", email: "john.doe@example.com" }}
+        initialValues={{ name: user?.name || "", email: user?.email || "" }}
         onSubmit={handleProfileSubmit}
       />
       <ChangePassword onSubmit={handleChangePasswordSubmit} />
