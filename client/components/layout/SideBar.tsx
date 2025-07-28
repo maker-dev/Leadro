@@ -84,7 +84,7 @@ const SideBar: React.FC<SideBarProps> = ({
   const navItems = role === "admin" ? adminNavItems : clientNavItems;
   const { logout } = useAuth();
   const logOut = async () => {
-    logout();
+    await logout();
   };
 
   return (

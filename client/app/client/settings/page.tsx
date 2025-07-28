@@ -6,17 +6,18 @@ import ChangePassword from "@/components/ui/cards/settings/ChangePassword";
 import AccountManagement from "@/components/ui/cards/settings/AccountManagement";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { useUser } from "@/context/UserContext";
-import { updateName } from "@/services/ProfileService";
+import { deleteAccount, updateName } from "@/services/ProfileService";
 import { toast } from "sonner";
 import UpdateProfileInfoType from "@/components/ui/cards/settings/types/UpdtProfileInfoType";
 import ChangePasswordType from "@/components/ui/cards/settings/types/ChangePasswordType";
 import { UseFormSetError } from "react-hook-form";
 import { changePassword } from "@/services/AuthService";
+import { useAuth } from "@/context/AuthContext";
 
 function SettingsPage() {
   const { setLabel, setTitle } = usePageContext();
   const { user, setUser } = useUser();
-
+  const { logout } = useAuth();
   useEffect(() => {
     setLabel("Settings");
     setTitle("Settings");
@@ -90,10 +91,16 @@ function SettingsPage() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const handleConfirmDelete = () => {
-    // Actual delete logic here
-    console.log("Account deleted");
-    setShowDeleteModal(false);
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteAccount();
+      await logout();
+      toast.success("Account deleted successfully");
+    } catch (error: any) {
+      toast.error("Account deletion failed. Please try again.");
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   const handleCancelDelete = () => {

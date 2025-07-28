@@ -325,11 +325,7 @@ const deleteAccount = async (req, res) => {
 
     // Delete the user
     await User.findByIdAndDelete(userId);
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
-    });
+
     res.status(200).json({
       success: true,
       message: "Account and all related data deleted successfully",

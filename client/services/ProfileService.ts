@@ -13,3 +13,8 @@ export const updateName = async (data: UpdateNamePayload) => {
   const response = await axios.patch("/users/change-name", data);
   return response.data;
 };
+
+export const deleteAccount = async () => {
+  const response = await axios.delete("/users/delete-account");
+  return response.data;
+};
