@@ -414,11 +414,78 @@ const DeleteSharedLeadValidation = [
     }),
 ];
 
+const GetClientLeadsValidation = [
+  // Validate pagination parameters
+  query("page")
+    .optional()
+    .trim()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer"),
+
+  query("limit")
+    .optional()
+    .trim()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  // Validate search parameter
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Search term must be between 1 and 100 characters"),
+
+  // Validate status parameter
+  query("status")
+    .optional()
+    .trim()
+    .isIn(["all", "new", "contacted", "converted", "lost"])
+    .withMessage("Status must be one of: all, new, contacted, converted, lost"),
+
+  // Validate source parameter
+  query("source")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Source must be between 1 and 50 characters"),
+
+  // Validate owner parameter
+  query("owner")
+    .optional()
+    .trim()
+    .isIn(["me", "anyone"])
+    .withMessage("Owner must be either 'me' or 'anyone'"),
+
+  // Validate date parameters
+  query("startDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("Start date must be a valid ISO 8601 date"),
+
+  query("endDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("End date must be a valid ISO 8601 date")
+    .custom((endDate, { req }) => {
+      if (
+        endDate &&
+        req.query.startDate &&
+        new Date(endDate) < new Date(req.query.startDate)
+      ) {
+        throw new Error("End date must be after start date");
+      }
+      return true;
+    }),
+];
+
 export {
   CreateLeadValidation,
   UpdateLeadValidation,
   DeleteLeadValidation,
   FilterLeadsValidation,
+  GetClientLeadsValidation,
   GetClientLeadsByIdValidation,
   GetAllLeadsGroupedByClientsValidation,
   GetLeadsSharedByClientValidation,

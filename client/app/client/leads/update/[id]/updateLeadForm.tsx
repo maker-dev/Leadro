@@ -11,6 +11,9 @@ import { SubmitHandler } from "react-hook-form";
 import { FiEdit } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
 import LeadSourceOptions from "@/data/leadSourceOptions";
+import { CreateLeadPayload, updateLead, getLead } from "@/services/LeadService";
+import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 // Get allowed source values
 const allowedSources = LeadSourceOptions.map((opt) => opt.value);
@@ -24,135 +27,70 @@ const statusOptions = [
   { value: "lost", label: "Lost" },
 ];
 
-// Fake data type
-const fakeLeads = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "1234567890",
-    source: "website",
-    status: "new",
-    createdAt: "2023-01-01",
-    extraFields: {
-      Address: "Rue 45",
-    },
-  },
-  {
-    id: 2,
-    name: "",
-    email: "jane@example.com",
-    phone: "",
-    source: "referral",
-    status: "contacted",
-    createdAt: "2023-01-02",
-  },
-  {
-    id: 3,
-    name: "Alice Smith",
-    email: "alice@example.com",
-    phone: "9876543210",
-    source: "facebook_ads",
-    status: "converted",
-    createdAt: "2023-01-03",
-  },
-  {
-    id: 4,
-    name: "Bob Lee",
-    email: "bob@example.com",
-    phone: "",
-    source: "",
-    status: "lost",
-    createdAt: "2023-01-04",
-  },
-  {
-    id: 5,
-    name: "",
-    email: "eve@example.com",
-    phone: "5551234567",
-    source: "website",
-    status: "new",
-    createdAt: "2023-01-05",
-  },
-  {
-    id: 6,
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    phone: "",
-    source: "event",
-    status: "contacted",
-    createdAt: "2023-01-06",
-  },
-  {
-    id: 7,
-    name: "",
-    email: "dave@example.com",
-    phone: "",
-    source: "",
-    status: "converted",
-    createdAt: "2023-01-07",
-  },
-  {
-    id: 8,
-    name: "Emily White",
-    email: "emily@example.com",
-    phone: "4445556666",
-    source: "cold_call",
-    status: "lost",
-    createdAt: "2023-01-08",
-  },
-];
-
 type UpdateLeadFormType = {
   leadId: string;
 };
 
+const validStatuses = ["new", "contacted", "converted", "lost"] as const;
+const getValidStatus = (status: any): UpdateLeadFormValues["status"] =>
+  validStatuses.includes(status) ? status : "new";
+
 const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
   const router = useRouter();
-  // Find the lead by id (convert id to number for comparison)
-  const lead = fakeLeads.find((l) => l.id === Number(leadId));
-
-  // Map extraFields to customFields array if present
-  const customFields = lead?.extraFields
-    ? Object.entries(lead.extraFields).map(([label, value]) => ({
-        label,
-        value,
-      }))
-    : [];
-
-  // Helper to ensure status is a valid enum value
-  const validStatuses = ["new", "contacted", "converted", "lost"] as const;
-  const getValidStatus = (status: any): UpdateLeadFormValues["status"] =>
-    validStatuses.includes(status) ? status : "new";
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
+    setError,
+    reset,
     formState: { errors, isSubmitting },
     control,
   } = useForm<UpdateLeadFormValues>({
     resolver: zodResolver(updateLeadFormSchema),
-    defaultValues: lead
-      ? {
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      source: "",
+      status: "new",
+      message: "",
+      customFields: [],
+    },
+    mode: "onBlur",
+  });
+
+  useEffect(() => {
+    const fetchLead = async () => {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const response = await getLead({ id: leadId });
+        const lead = response.data;
+        const customFields = lead.extraFields
+          ? Object.entries(lead.extraFields).map(([label, value]) => ({
+              label,
+              value: String(value),
+            }))
+          : [];
+        reset({
           name: lead.name || "",
           email: lead.email || "",
           phone: lead.phone || "",
           source: getValidSource(lead.source),
           status: getValidStatus(lead.status),
-          message: "",
+          message: lead.message || "",
           customFields,
-        }
-      : {
-          name: "",
-          email: "",
-          phone: "",
-          source: "",
-          status: "new",
-          message: "",
-          customFields: [],
-        },
-    mode: "onBlur",
-  });
+        });
+      } catch (err) {
+        setFetchError("Lead not found.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLead();
+  }, [leadId, reset]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -163,9 +101,68 @@ const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
     append({ label: "", value: "" });
   };
 
-  const onSubmit: SubmitHandler<UpdateLeadFormValues> = (data) => {
-    console.log(data);
+  const onSubmit: SubmitHandler<UpdateLeadFormValues> = async (data) => {
+    // Transform custom fields from array of {label, value} to {label: value} format
+    const customFieldsObject = (data.customFields ?? []).reduce(
+      (acc, field) => {
+        if (field.label && field.value) {
+          acc[field.label] = field.value;
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const { customFields, ...baseFields } = data;
+    const transformedData = {
+      ...baseFields,
+      ...customFieldsObject,
+    };
+
+    // Remove empty string or null fields before sending
+    const cleanedData = Object.fromEntries(
+      Object.entries(transformedData).filter(
+        ([, value]) => value !== "" && value !== null
+      )
+    );
+
+    try {
+      await updateLead({
+        id: leadId,
+        data: cleanedData as Partial<CreateLeadPayload>,
+      });
+      toast.success("Lead updated successfully");
+      router.push(`/client/leads/view/${leadId}`);
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Lead update failed. Please try again.");
+      }
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="text-center text-gray-500 text-lg mt-10">Loading...</div>
+    );
+  }
+  if (fetchError) {
+    return (
+      <div className="text-center text-gray-500 text-lg mt-10">
+        {fetchError}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -299,7 +296,14 @@ const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
               disabled={isSubmitting}
               aria-label="Save"
             >
-              Save
+              {isSubmitting ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block align-middle mr-2"></span>
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
             </button>
           </div>
         </form>

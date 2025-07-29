@@ -42,18 +42,119 @@ const createLead = async (req, res) => {
   }
 };
 
-// Get all leads for a client
+// Get all leads for a client with pagination and filtering
 const getClientLeads = async (req, res) => {
   try {
-    // Get leads where ownerId matches the current user's ID
-    const leads = await Lead.find({ ownerId: req.user.userId }).sort({
-      createdAt: -1,
-    }); // Sort by newest first
+    const {
+      page = 1,
+      limit = 8,
+      search,
+      status,
+      source,
+      startDate,
+      endDate,
+      owner = "anyone",
+    } = req.query;
+
+    // Build query
+    const query = {};
+
+    // Handle owner filter
+    if (owner === "me") {
+      query.ownerId = req.user.userId;
+    } else if (owner === "anyone") {
+      // Get both owned leads and shared leads
+      const sharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        permissions: { $in: ["read"] },
+      });
+      const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
+
+      query.$or = [
+        { ownerId: req.user.userId },
+        { ownerId: { $in: sharedOwnerIds } },
+      ];
+    }
+
+    // Add search condition if search parameter exists
+    if (search) {
+      const searchQuery = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+        ],
+      };
+
+      if (query.$or) {
+        // If we already have $or for owner filter, combine with search
+        query.$and = [{ $or: query.$or }, searchQuery];
+        delete query.$or;
+      } else {
+        Object.assign(query, searchQuery);
+      }
+    }
+
+    // Add status filter if provided
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    // Add source filter if provided
+    if (source && source !== "all") {
+      query.source = source;
+    }
+
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        query.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get total count for pagination
+    const totalItems = await Lead.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNum);
+
+    // Get leads with pagination
+    const leads = await Lead.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    // Add owner information to leads
+    const leadsWithOwner = leads.map((lead) => {
+      const isOwned = lead.ownerId.toString() === req.user.userId;
+      return {
+        ...lead,
+        owner: isOwned ? "me" : "shared",
+        sharedBy: isOwned ? null : lead.ownerId, // You might want to populate this with actual owner name
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: leads.length,
-      data: leads,
+      data: {
+        leads: leadsWithOwner,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems,
+          itemsPerPage: limitNum,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1,
+        },
+      },
     });
   } catch (error) {
     console.error("Get client leads error:", error);
@@ -102,22 +203,8 @@ const getLeadById = async (req, res) => {
 const updateLead = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = {};
-
-    // Dynamically build update object only with provided fields
-    const allowedFields = [
-      "name",
-      "email",
-      "phone",
-      "source",
-      "message",
-      "status",
-    ];
-    allowedFields.forEach((field) => {
-      if (field in req.body) {
-        updateData[field] = req.body[field];
-      }
-    });
+    const { name, email, phone, source, message, status, ...extraFields } =
+      req.body;
 
     // Find lead and verify ownership
     const lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
@@ -129,30 +216,21 @@ const updateLead = async (req, res) => {
       });
     }
 
-    // Handle extra fields separately while preserving existing ones
-    const existingExtraFields = Object.fromEntries(
-      lead.extraFields || new Map()
-    );
-    const newExtraFields = Object.keys(req.body)
-      .filter((key) => !allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = req.body[key];
-        return obj;
-      }, {});
+    // Build complete update object - replace all fields with what's provided
+    const updateData = {
+      name: name !== undefined ? name : null, // Allow null to delete the field
+      email,
+      phone: phone !== undefined ? phone : null,
+      source: source !== undefined ? source : null,
+      message: message !== undefined ? message : null,
+      status,
+    };
 
-    // Merge existing and new extra fields
-    const mergedExtraFields = { ...existingExtraFields, ...newExtraFields };
-
-    if (Object.keys(mergedExtraFields).length > 0) {
-      updateData.extraFields = new Map(Object.entries(mergedExtraFields));
-    }
-
-    // Update only if there are changes
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields provided for update",
-      });
+    // Handle extra fields - replace all extra fields with what's provided
+    if (Object.keys(extraFields).length > 0) {
+      updateData.extraFields = new Map(Object.entries(extraFields));
+    } else {
+      updateData.extraFields = new Map(); // Clear all extra fields if none provided
     }
 
     // Update the lead

@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FiPhone, FiMail, FiEdit2, FiTrash2 } from "react-icons/fi";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import { deleteLead } from "@/services/LeadService";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type LeadDetailsProps = {
   lead: {
@@ -26,11 +29,19 @@ const statusStyles: Record<string, string> = {
 
 const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
+  const router = useRouter();
   const handleDeleteClick = () => setIsDeleteModalOpen(true);
-  const handleConfirmDelete = () => {
-    // TODO: implement delete logic
-    setIsDeleteModalOpen(false);
+  const handleConfirmDelete = async () => {
+    if (!lead.id) return;
+    try {
+      await deleteLead({ id: lead.id });
+      router.push("/client/leads");
+      toast.success("Lead deleted successfully");
+    } catch (error: any) {
+      toast.error("Failed to delete lead");
+    } finally {
+      setIsDeleteModalOpen(false);
+    }
   };
   const handleCancelDelete = () => setIsDeleteModalOpen(false);
 

@@ -24,6 +24,7 @@ import {
   UpdateLeadValidation,
   DeleteLeadValidation,
   FilterLeadsValidation,
+  GetClientLeadsValidation,
   GetClientLeadsByIdValidation,
   GetLeadsSharedByClientValidation,
   UpdateSharedLeadValidation,
@@ -165,10 +166,66 @@ router.post(
  * @swagger
  * /api/leads/client:
  *   get:
- *     summary: Get all leads for the authenticated client
+ *     summary: Get all leads for the authenticated client with pagination and filtering
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 8
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *         description: Search term for name, email, or phone
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [all, new, contacted, converted, lost]
+ *           default: all
+ *         description: Filter by lead status
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 50
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: owner
+ *         schema:
+ *           type: string
+ *           enum: [me, anyone]
+ *           default: anyone
+ *         description: Filter by ownership (me = owned by user, anyone = owned + shared)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created after this date (ISO 8601 format)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter leads created before this date (ISO 8601 format)
  *     responses:
  *       200:
  *         description: Leads retrieved successfully
@@ -180,57 +237,115 @@ router.post(
  *                 success:
  *                   type: boolean
  *                   example: true
- *                 count:
- *                   type: integer
- *                   description: Number of leads found
- *                   example: 5
  *                 data:
- *                   type: array
- *                   description: Array of leads
- *                   items:
- *                     type: object
- *                     properties:
- *                       _id:
- *                         type: string
- *                         description: Lead ID
- *                         example: "60d21b4667d0d8992e610c85"
- *                       email:
- *                         type: string
- *                         description: Email of the lead
- *                         example: "lead@example.com"
- *                       name:
- *                         type: string
- *                         description: Name of the lead
- *                         example: "John Doe"
- *                       phone:
- *                         type: string
- *                         description: Phone number of the lead
- *                         example: "+1234567890"
- *                       source:
- *                         type: string
- *                         description: Source of the lead
- *                         example: "Website"
- *                       status:
- *                         type: string
- *                         enum: [new, contacted, converted, lost]
- *                         description: Current status of the lead
- *                         example: "new"
- *                       message:
- *                         type: string
- *                         description: Message from the lead
- *                         example: "Interested in your services"
- *                       extraFields:
+ *                   type: object
+ *                   properties:
+ *                     leads:
+ *                       type: array
+ *                       description: Array of leads
+ *                       items:
  *                         type: object
- *                         description: Additional custom fields for the lead
- *                         additionalProperties: true
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                         description: When the lead was created
- *                       updatedAt:
- *                         type: string
- *                         format: date-time
- *                         description: When the lead was last updated
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             description: Lead ID
+ *                             example: "60d21b4667d0d8992e610c85"
+ *                           email:
+ *                             type: string
+ *                             description: Email of the lead
+ *                             example: "lead@example.com"
+ *                           name:
+ *                             type: string
+ *                             description: Name of the lead
+ *                             example: "John Doe"
+ *                           phone:
+ *                             type: string
+ *                             description: Phone number of the lead
+ *                             example: "+1234567890"
+ *                           source:
+ *                             type: string
+ *                             description: Source of the lead
+ *                             example: "Website"
+ *                           status:
+ *                             type: string
+ *                             enum: [new, contacted, converted, lost]
+ *                             description: Current status of the lead
+ *                             example: "new"
+ *                           message:
+ *                             type: string
+ *                             description: Message from the lead
+ *                             example: "Interested in your services"
+ *                           extraFields:
+ *                             type: object
+ *                             description: Additional custom fields for the lead
+ *                             additionalProperties: true
+ *                             example:
+ *                               company: "Acme Inc"
+ *                               jobTitle: "CEO"
+ *                               industry: "Technology"
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             description: When the lead was created
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                             description: When the lead was last updated
+ *                           owner:
+ *                             type: string
+ *                             enum: [me, shared]
+ *                             description: Ownership status
+ *                             example: "me"
+ *                           sharedBy:
+ *                             type: string
+ *                             description: Owner ID if shared (null if owned by user)
+ *                             example: "60d21b4667d0d8992e610c86"
+ *                     pagination:
+ *                       type: object
+ *                       description: Pagination information
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           description: Current page number
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           description: Total number of pages
+ *                           example: 5
+ *                         totalItems:
+ *                           type: integer
+ *                           description: Total number of items
+ *                           example: 40
+ *                         itemsPerPage:
+ *                           type: integer
+ *                           description: Number of items per page
+ *                           example: 8
+ *                         hasNextPage:
+ *                           type: boolean
+ *                           description: Whether there is a next page
+ *                           example: true
+ *                         hasPrevPage:
+ *                           type: boolean
+ *                           description: Whether there is a previous page
+ *                           example: false
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Page must be a positive integer"]
  *       401:
  *         description: Unauthorized
  *       403:
@@ -238,7 +353,14 @@ router.post(
  *       500:
  *         description: Server error
  */
-router.get("/client", verifyToken, verifyRole(["client"]), getClientLeads);
+router.get(
+  "/client",
+  verifyToken,
+  verifyRole(["client"]),
+  GetClientLeadsValidation,
+  validate,
+  getClientLeads
+);
 
 /**
  * @swagger
