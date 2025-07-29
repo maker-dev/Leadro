@@ -8,6 +8,7 @@ import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
 import NormalSelectInput from "@/components/ui/inputs/NormalSelectInput";
 import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
 import { FiPlus } from "react-icons/fi";
+import { FiLoader } from "react-icons/fi";
 import BaseCard from "@/components/ui/cards/BaseCard";
 import LeadSourceOptions from "@/data/leadSourceOptions";
 const statusOptions = [
@@ -16,12 +17,16 @@ const statusOptions = [
   { value: "converted", label: "Converted" },
   { value: "lost", label: "Lost" },
 ];
+import { createLead, CreateLeadPayload } from "@/services/LeadService";
+import { toast } from "sonner";
 
 const CreateLeadForm = () => {
   const router = useRouter();
   const {
     register,
     handleSubmit,
+    reset,
+    setError,
     formState: { errors, isSubmitting },
     control,
   } = useForm<CreateLeadFormValues>({
@@ -47,8 +52,51 @@ const CreateLeadForm = () => {
     append({ label: "", value: "" });
   };
 
-  const onSubmit = (data: CreateLeadFormValues) => {
-    console.log(data);
+  const onSubmit = async (data: CreateLeadFormValues) => {
+    // Transform custom fields from array of {label, value} to {label: value} format
+    const customFieldsObject = (data.customFields ?? []).reduce(
+      (acc, field) => {
+        if (field.label && field.value) {
+          acc[field.label] = field.value;
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const { customFields, ...baseFields } = data;
+    const transformedData = {
+      ...baseFields,
+      ...customFieldsObject,
+    };
+
+    // Remove empty string or null fields before sending
+    const cleanedData = Object.fromEntries(
+      Object.entries(transformedData).filter(
+        ([, value]) => value !== "" && value !== null
+      )
+    );
+
+    try {
+      await createLead(cleanedData as CreateLeadPayload);
+      toast.success("Lead created successfully");
+      reset();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Lead creation failed. Please try again.");
+      }
+    }
   };
 
   return (
@@ -179,11 +227,18 @@ const CreateLeadForm = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               disabled={isSubmitting}
               aria-label="Save"
             >
-              Save
+              {isSubmitting ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
             </button>
           </div>
         </form>

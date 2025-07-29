@@ -1,11 +1,34 @@
-import express from 'express';
-import { createLead, getClientLeads, updateLead, deleteLead, filterLeads, getAllLeadsGroupedByClients, getClientLeadsById, createLeadFromWebhook, getLeadsSharedWithMe, getLeadsSharedByClient, updateSharedLead, deleteSharedLead } from '../controllers/lead.controller.js';
-import verifyToken from '../middlewares/verifyToken.js';
-import verifyRole from '../middlewares/verifyRole.js';
-import validate from '../middlewares/validate.js';
-import checkApiKeyOrRateLimitByIP from '../middlewares/rateLimit/checkApiKeyOrRateLimitByIP.js';
-import apiKeyRateLimiter from '../middlewares/rateLimit/rateLimitByApiKey.js';
-import { CreateLeadValidation, UpdateLeadValidation, DeleteLeadValidation, FilterLeadsValidation, GetClientLeadsByIdValidation, GetLeadsSharedByClientValidation, UpdateSharedLeadValidation, DeleteSharedLeadValidation } from '../middlewares/validation/LeadValidation.js';
+import express from "express";
+import {
+  createLead,
+  getClientLeads,
+  updateLead,
+  deleteLead,
+  filterLeads,
+  getAllLeadsGroupedByClients,
+  getClientLeadsById,
+  createLeadFromWebhook,
+  getLeadsSharedWithMe,
+  getLeadsSharedByClient,
+  updateSharedLead,
+  deleteSharedLead,
+  getLeadById,
+} from "../controllers/lead.controller.js";
+import verifyToken from "../middlewares/verifyToken.js";
+import verifyRole from "../middlewares/verifyRole.js";
+import validate from "../middlewares/validate.js";
+import checkApiKeyOrRateLimitByIP from "../middlewares/rateLimit/checkApiKeyOrRateLimitByIP.js";
+import apiKeyRateLimiter from "../middlewares/rateLimit/rateLimitByApiKey.js";
+import {
+  CreateLeadValidation,
+  UpdateLeadValidation,
+  DeleteLeadValidation,
+  FilterLeadsValidation,
+  GetClientLeadsByIdValidation,
+  GetLeadsSharedByClientValidation,
+  UpdateSharedLeadValidation,
+  DeleteSharedLeadValidation,
+} from "../middlewares/validation/LeadValidation.js";
 
 const router = express.Router();
 
@@ -57,14 +80,16 @@ const router = express.Router();
  *                 type: string
  *                 maxLength: 1000
  *                 example: "Interested in your services"
- *               extraFields:
- *                 type: object
- *                 description: Additional custom fields for the lead
- *                 additionalProperties: true
- *                 example:
- *                   company: "Acme Inc"
- *                   jobTitle: "CEO"
- *                   industry: "Technology"
+ *               company:
+ *                 type: string
+ *                 example: "Acme Inc"
+ *               jobTitle:
+ *                 type: string
+ *                 example: "CEO"
+ *               industry:
+ *                 type: string
+ *                 example: "Technology"
+ *
  *     responses:
  *       201:
  *         description: Lead created successfully
@@ -127,7 +152,14 @@ const router = express.Router();
  *       500:
  *         description: Server error
  */
-router.post('/client', verifyToken, verifyRole(['client']), CreateLeadValidation, validate, createLead);
+router.post(
+  "/client",
+  verifyToken,
+  verifyRole(["client"]),
+  CreateLeadValidation,
+  validate,
+  createLead
+);
 
 /**
  * @swagger
@@ -206,7 +238,85 @@ router.post('/client', verifyToken, verifyRole(['client']), CreateLeadValidation
  *       500:
  *         description: Server error
  */
-router.get('/client', verifyToken, verifyRole(['client']), getClientLeads);
+router.get("/client", verifyToken, verifyRole(["client"]), getClientLeads);
+
+/**
+ * @swagger
+ * /api/leads/client/{id}:
+ *   get:
+ *     summary: Get a lead by ID for the authenticated client
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the lead
+ *     responses:
+ *       200:
+ *         description: Lead retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     email:
+ *                       type: string
+ *                       example: "lead@example.com"
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     phone:
+ *                       type: string
+ *                       example: "+1234567890"
+ *                     source:
+ *                       type: string
+ *                       example: "Website"
+ *                     status:
+ *                       type: string
+ *                       enum: [new, contacted, converted, lost]
+ *                       example: "new"
+ *                     message:
+ *                       type: string
+ *                       example: "Interested in your services"
+ *                     extraFields:
+ *                       type: object
+ *                       description: Additional custom fields for the lead
+ *                       additionalProperties: true
+ *                       example:
+ *                         company: "Acme Inc"
+ *                         jobTitle: "CEO"
+ *                         industry: "Technology"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Invalid lead ID format
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Client access required
+ *       404:
+ *         description: Lead not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/client/:id", verifyToken, verifyRole(["client"]), getLeadById);
 
 /**
  * @swagger
@@ -312,7 +422,14 @@ router.get('/client', verifyToken, verifyRole(['client']), getClientLeads);
  *       500:
  *         description: Server error
  */
-router.put('/client/:id', verifyToken, verifyRole(['client']), UpdateLeadValidation, validate, updateLead);
+router.put(
+  "/client/:id",
+  verifyToken,
+  verifyRole(["client"]),
+  UpdateLeadValidation,
+  validate,
+  updateLead
+);
 
 /**
  * @swagger
@@ -354,7 +471,14 @@ router.put('/client/:id', verifyToken, verifyRole(['client']), UpdateLeadValidat
  *       500:
  *         description: Server error
  */
-router.delete('/client/:id', verifyToken, verifyRole(['client']), DeleteLeadValidation, validate, deleteLead);
+router.delete(
+  "/client/:id",
+  verifyToken,
+  verifyRole(["client"]),
+  DeleteLeadValidation,
+  validate,
+  deleteLead
+);
 
 /**
  * @swagger
@@ -472,7 +596,14 @@ router.delete('/client/:id', verifyToken, verifyRole(['client']), DeleteLeadVali
  *       500:
  *         description: Server error
  */
-router.get('/client/filter', verifyToken, verifyRole(['client']), FilterLeadsValidation, validate, filterLeads);
+router.get(
+  "/client/filter",
+  verifyToken,
+  verifyRole(["client"]),
+  FilterLeadsValidation,
+  validate,
+  filterLeads
+);
 
 /**
  * @swagger
@@ -523,7 +654,12 @@ router.get('/client/filter', verifyToken, verifyRole(['client']), FilterLeadsVal
  *       500:
  *         description: Server error
  */
-router.get('/client/shared-with-me', verifyToken, verifyRole(['client']), getLeadsSharedWithMe);
+router.get(
+  "/client/shared-with-me",
+  verifyToken,
+  verifyRole(["client"]),
+  getLeadsSharedWithMe
+);
 
 /**
  * @swagger
@@ -567,7 +703,14 @@ router.get('/client/shared-with-me', verifyToken, verifyRole(['client']), getLea
  *       500:
  *         description: Server error
  */
-router.get('/client/shared-by-client/:clientAccessId', verifyToken, verifyRole(['client']), GetLeadsSharedByClientValidation, validate, getLeadsSharedByClient);
+router.get(
+  "/client/shared-by-client/:clientAccessId",
+  verifyToken,
+  verifyRole(["client"]),
+  GetLeadsSharedByClientValidation,
+  validate,
+  getLeadsSharedByClient
+);
 
 /**
  * @swagger
@@ -640,7 +783,14 @@ router.get('/client/shared-by-client/:clientAccessId', verifyToken, verifyRole([
  *       500:
  *         description: Server error
  */
-router.put('/client/shared-lead/:leadId', verifyToken, verifyRole(['client']), UpdateSharedLeadValidation, validate, updateSharedLead);
+router.put(
+  "/client/shared-lead/:leadId",
+  verifyToken,
+  verifyRole(["client"]),
+  UpdateSharedLeadValidation,
+  validate,
+  updateSharedLead
+);
 
 /**
  * @swagger
@@ -682,7 +832,14 @@ router.put('/client/shared-lead/:leadId', verifyToken, verifyRole(['client']), U
  *       500:
  *         description: Server error
  */
-router.delete('/client/shared-lead/:leadId', verifyToken, verifyRole(['client']), DeleteSharedLeadValidation, validate, deleteSharedLead);
+router.delete(
+  "/client/shared-lead/:leadId",
+  verifyToken,
+  verifyRole(["client"]),
+  DeleteSharedLeadValidation,
+  validate,
+  deleteSharedLead
+);
 
 //ADMIN API
 
@@ -843,7 +1000,12 @@ router.delete('/client/shared-lead/:leadId', verifyToken, verifyRole(['client'])
  *       500:
  *         description: Server error
  */
-router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGroupedByClients);
+router.get(
+  "/admin/grouped",
+  verifyToken,
+  verifyRole(["admin"]),
+  getAllLeadsGroupedByClients
+);
 
 /**
  * @swagger
@@ -947,7 +1109,14 @@ router.get('/admin/grouped', verifyToken, verifyRole(['admin']), getAllLeadsGrou
  *       500:
  *         description: Server error
  */
-router.get('/admin/clients/:clientId', verifyToken, verifyRole(['admin']), GetClientLeadsByIdValidation, validate, getClientLeadsById);
+router.get(
+  "/admin/clients/:clientId",
+  verifyToken,
+  verifyRole(["admin"]),
+  GetClientLeadsByIdValidation,
+  validate,
+  getClientLeadsById
+);
 
 //PUBLIC API
 
@@ -1098,6 +1267,13 @@ router.get('/admin/clients/:clientId', verifyToken, verifyRole(['admin']), GetCl
  *       500:
  *         description: Server error
  */
-router.post("/client/webhook", checkApiKeyOrRateLimitByIP, apiKeyRateLimiter, CreateLeadValidation, validate, createLeadFromWebhook);
+router.post(
+  "/client/webhook",
+  checkApiKeyOrRateLimitByIP,
+  apiKeyRateLimiter,
+  CreateLeadValidation,
+  validate,
+  createLeadFromWebhook
+);
 
 export default router;
