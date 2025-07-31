@@ -3,7 +3,7 @@ import { useParams } from "next/navigation";
 import LeadDetails from "@/components/ui/cards/LeadDetails";
 import { useEffect, useState } from "react";
 import { usePageContext } from "@/context/PageTitleContext";
-import { getLead } from "@/services/LeadService";
+import { getLead, Lead } from "@/services/LeadService";
 import formatDate from "@/utils/formateDate";
 
 const validStatuses = ["new", "contacted", "converted", "lost"] as const;
@@ -15,7 +15,7 @@ const getValidStatus = (
 const ViewLeadPage = () => {
   const { setLabel, setTitle } = usePageContext();
   const { id } = useParams();
-  const [lead, setLead] = useState<any>(null);
+  const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,6 +1,5 @@
 import Lead from "../models/Lead.js";
 import ClientAccess from "../models/ClientAccess.js";
-import User from "../models/User.js";
 
 /* CLIENT API */
 
@@ -12,11 +11,11 @@ const createLead = async (req, res) => {
 
     const lead = await Lead.create({
       ownerId: req.user.userId, // Assign to current user
-      name,
+      name: name !== undefined ? name : null,
       email,
-      phone,
-      source,
-      message,
+      phone: phone !== undefined ? phone : null,
+      source: source !== undefined ? source : null,
+      message: message !== undefined ? message : null,
       status,
       extraFields: new Map(Object.entries(extraFields)), // Convert extra fields to Map
     });
@@ -285,224 +284,6 @@ const deleteLead = async (req, res) => {
   }
 };
 
-// Filter/Search leads
-const filterLeads = async (req, res) => {
-  try {
-    const { search, source, status } = req.query;
-    const query = { ownerId: req.user.userId };
-
-    // Add search condition if search parameter exists
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // Add source filter if provided
-    if (source) {
-      query.source = { $regex: source, $options: "i" };
-    }
-
-    // Add status filter if provided
-    if (status) {
-      query.status = { $regex: status, $options: "i" };
-    }
-
-    const leads = await Lead.find(query).sort({ createdAt: -1 }); // Sort by newest first
-
-    res.status(200).json({
-      success: true,
-      count: leads.length,
-      data: leads,
-    });
-  } catch (error) {
-    console.error("Filter leads error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-// Get all leads that are being shared with the current client (not their own leads)
-const getLeadsSharedWithMe = async (req, res) => {
-  try {
-    // Find all ClientAccess records where the current user is sharedWithId and has 'read' permission
-    const sharedAccesses = await ClientAccess.find({
-      sharedWithId: req.user.userId,
-      permissions: { $in: ["read"] },
-    });
-
-    // Collect all ownerIds who have shared with this user (exclude self)
-    const sharedOwnerIds = sharedAccesses
-      .map((access) => access.ownerId.toString())
-      .filter((ownerId) => ownerId !== req.user.userId);
-
-    if (sharedOwnerIds.length === 0) {
-      return res.status(200).json({
-        success: true,
-        count: 0,
-        data: [],
-      });
-    }
-
-    // Get leads where ownerId is in the set (exclude current user's own leads)
-    const leads = await Lead.find({ ownerId: { $in: sharedOwnerIds } })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Get owner info for each ownerId
-    const owners = await User.find(
-      { _id: { $in: sharedOwnerIds } },
-      "name email"
-    ).lean();
-    const ownerMap = {};
-    owners.forEach((owner) => {
-      ownerMap[owner._id.toString()] = owner;
-    });
-
-    // Group leads by owner
-    const grouped = {};
-    leads.forEach((lead) => {
-      const ownerId = lead.ownerId.toString();
-      if (!grouped[ownerId]) {
-        grouped[ownerId] = {
-          owner: ownerMap[ownerId] || { _id: ownerId, name: "", email: "" },
-          leads: [],
-        };
-      }
-      grouped[ownerId].leads.push(lead);
-    });
-
-    res.status(200).json({
-      success: true,
-      count: leads.length,
-      data: Object.values(grouped),
-    });
-  } catch (error) {
-    console.error("Get leads shared with me error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-// Get all leads for a certain client, if shared with the current user, using ClientAccess _id
-const getLeadsSharedByClient = async (req, res) => {
-  try {
-    const access = req.access;
-
-    // Get all leads for the owner of this access
-    const leads = await Lead.find({ ownerId: access.ownerId }).sort({
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      count: leads.length,
-      data: leads,
-    });
-  } catch (error) {
-    console.error("Get leads shared by client error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-// Update a shared lead (if user has 'update' permission via ClientAccess)
-const updateSharedLead = async (req, res) => {
-  try {
-    const { leadId } = req.params;
-    const lead = req.lead;
-    // Dynamically build update object only with provided fields
-    const allowedFields = [
-      "name",
-      "email",
-      "phone",
-      "source",
-      "message",
-      "status",
-    ];
-    const updateData = {};
-    allowedFields.forEach((field) => {
-      if (field in req.body) {
-        updateData[field] = req.body[field];
-      }
-    });
-    // Handle extra fields
-    const existingExtraFields = Object.fromEntries(
-      lead.extraFields || new Map()
-    );
-    const newExtraFields = Object.keys(req.body)
-      .filter((key) => !allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = req.body[key];
-        return obj;
-      }, {});
-    const mergedExtraFields = { ...existingExtraFields, ...newExtraFields };
-    if (Object.keys(mergedExtraFields).length > 0) {
-      updateData.extraFields = new Map(Object.entries(mergedExtraFields));
-    }
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields provided for update",
-      });
-    }
-    const updatedLead = await Lead.findByIdAndUpdate(leadId, updateData, {
-      new: true,
-      runValidators: true,
-    });
-    res.status(200).json({
-      success: true,
-      message: "Lead updated successfully",
-      data: updatedLead,
-    });
-  } catch (error) {
-    console.error("Update shared lead error:", error);
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
-        errors: Object.values(error.errors).map((err) => err.message),
-      });
-    }
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid lead ID format",
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-// Delete a shared lead (if user has 'delete' permission via ClientAccess)
-const deleteSharedLead = async (req, res) => {
-  try {
-    const lead = req.lead;
-    await lead.deleteOne();
-    res.status(200).json({
-      success: true,
-      message: "Lead deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete shared lead error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
 /* ADMIN API */
 
 // Get all leads grouped by clients (Admin only)
@@ -720,14 +501,9 @@ export {
   createLead,
   getClientLeads,
   getLeadById,
-  getLeadsSharedWithMe,
   updateLead,
   deleteLead,
-  filterLeads,
   getAllLeadsGroupedByClients,
   getClientLeadsById,
   createLeadFromWebhook,
-  getLeadsSharedByClient,
-  updateSharedLead,
-  deleteSharedLead,
 };

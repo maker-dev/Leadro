@@ -5,6 +5,7 @@ import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { deleteLead } from "@/services/LeadService";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import getSourceLabel from "@/utils/getSourceLabel";
 
 type LeadDetailsProps = {
   lead: {
@@ -30,16 +31,20 @@ const statusStyles: Record<string, string> = {
 const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
+  const [loadingDelete, setLoadingDelete] = useState(false);
+
   const handleDeleteClick = () => setIsDeleteModalOpen(true);
   const handleConfirmDelete = async () => {
     if (!lead.id) return;
     try {
+      setLoadingDelete(true);
       await deleteLead({ id: lead.id });
       router.push("/client/leads");
       toast.success("Lead deleted successfully");
     } catch (error: any) {
       toast.error("Failed to delete lead");
     } finally {
+      setLoadingDelete(false);
       setIsDeleteModalOpen(false);
     }
   };
@@ -111,7 +116,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
             label="Status"
             value={lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
           />
-          <DetailRow label="Source" value={lead.source} />
+          <DetailRow label="Source" value={getSourceLabel(lead.source)} />
           <DetailRow label="Message" value={lead.message} />
           <DetailRow label="Created" value={lead.created_at} />
           {/* Render extra fields if any */}
@@ -129,6 +134,7 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
         description="Are you sure you want to delete this lead? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={loadingDelete}
       />
     </div>
   );

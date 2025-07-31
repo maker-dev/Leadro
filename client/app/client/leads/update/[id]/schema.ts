@@ -53,14 +53,27 @@ export const updateLeadFormSchema = z
   })
   .superRefine((data, ctx) => {
     if (data.customFields) {
+      const labels = new Set<string>();
       data.customFields.forEach((field, idx) => {
-        if (RESERVED_KEYS.includes(field.label.trim().toLowerCase())) {
+        const label = field.label.trim().toLowerCase();
+
+        if (RESERVED_KEYS.includes(label)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "This label is reserved.",
             path: ["customFields", idx, "label"],
           });
         }
+
+        if (labels.has(label)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Duplicate label not allowed.",
+            path: ["customFields", idx, "label"],
+          });
+        }
+
+        labels.add(label);
       });
     }
   });

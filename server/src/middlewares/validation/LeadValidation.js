@@ -1,6 +1,7 @@
 import { body, param, query } from "express-validator";
 import Lead from "../../models/Lead.js";
-import ClientAccess from "../../models/ClientAccess.js";
+
+/* CLIENT API */
 
 const CreateLeadValidation = [
   // Required fields
@@ -93,6 +94,72 @@ const CreateLeadValidation = [
 
     return true;
   }),
+];
+
+const GetClientLeadsValidation = [
+  // Validate pagination parameters
+  query("page")
+    .optional()
+    .trim()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer"),
+
+  query("limit")
+    .optional()
+    .trim()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  // Validate search parameter
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Search term must be between 1 and 100 characters"),
+
+  // Validate status parameter
+  query("status")
+    .optional()
+    .trim()
+    .isIn(["all", "new", "contacted", "converted", "lost"])
+    .withMessage("Status must be one of: all, new, contacted, converted, lost"),
+
+  // Validate source parameter
+  query("source")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Source must be between 1 and 50 characters"),
+
+  // Validate owner parameter
+  query("owner")
+    .optional()
+    .trim()
+    .isIn(["me", "anyone"])
+    .withMessage("Owner must be either 'me' or 'anyone'"),
+
+  // Validate date parameters
+  query("startDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("Start date must be a valid ISO 8601 date"),
+
+  query("endDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("End date must be a valid ISO 8601 date")
+    .custom((endDate, { req }) => {
+      if (
+        endDate &&
+        req.query.startDate &&
+        new Date(endDate) < new Date(req.query.startDate)
+      ) {
+        throw new Error("End date must be after start date");
+      }
+      return true;
+    }),
 ];
 
 const UpdateLeadBodyValidation = [
@@ -210,28 +277,7 @@ const DeleteLeadValidation = [
     }),
 ];
 
-const FilterLeadsValidation = [
-  // Validate search parameter
-  query("search")
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Search term must be between 2 and 100 characters"),
-
-  // Validate source parameter
-  query("source")
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage("Source must be between 2 and 50 characters"),
-
-  // Validate status parameter
-  query("status")
-    .optional()
-    .trim()
-    .isIn(["new", "contacted", "converted", "lost"])
-    .withMessage("Status must be one of: new, contacted, converted, lost"),
-];
+/* ADMIN API */
 
 const GetClientLeadsByIdValidation = [
   // Validate client ID parameter
@@ -340,155 +386,11 @@ const GetAllLeadsGroupedByClientsValidation = [
     .withMessage("Client name must be between 2 and 50 characters"),
 ];
 
-const GetLeadsSharedByClientValidation = [
-  param("clientAccessId")
-    .trim()
-    .notEmpty()
-    .withMessage("ClientAccess ID is required")
-    .isMongoId()
-    .withMessage("Invalid ClientAccess ID format")
-    .custom(async (clientAccessId, { req }) => {
-      const access = await ClientAccess.findOne({
-        _id: clientAccessId,
-        sharedWithId: req.user.userId,
-        permissions: { $in: ["read"] },
-      });
-      if (!access) {
-        throw new Error("You do not have access to this client's leads.");
-      }
-      req.access = access;
-      return true;
-    }),
-];
-
-const UpdateSharedLeadValidation = [
-  param("leadId")
-    .trim()
-    .notEmpty()
-    .withMessage("Lead ID is required")
-    .isMongoId()
-    .withMessage("Invalid Lead ID format")
-    .custom(async (leadId, { req }) => {
-      const lead = await Lead.findById(leadId);
-      if (!lead) {
-        throw new Error("Lead not found.");
-      }
-      // Check for update permission via ClientAccess
-      const access = await ClientAccess.findOne({
-        ownerId: lead.ownerId,
-        sharedWithId: req.user.userId,
-        permissions: { $in: ["update"] },
-      });
-      if (!access) {
-        throw new Error("You do not have update permission for this lead.");
-      }
-      req.lead = lead;
-      return true;
-    }),
-  ...UpdateLeadBodyValidation,
-];
-
-const DeleteSharedLeadValidation = [
-  param("leadId")
-    .trim()
-    .notEmpty()
-    .withMessage("Lead ID is required")
-    .isMongoId()
-    .withMessage("Invalid Lead ID format")
-    .custom(async (leadId, { req }) => {
-      const lead = await Lead.findById(leadId);
-      if (!lead) {
-        throw new Error("Lead not found.");
-      }
-      // Check for delete permission via ClientAccess
-      const access = await ClientAccess.findOne({
-        ownerId: lead.ownerId,
-        sharedWithId: req.user.userId,
-        permissions: { $in: ["delete"] },
-      });
-      if (!access) {
-        throw new Error("You do not have delete permission for this lead.");
-      }
-      req.lead = lead;
-      return true;
-    }),
-];
-
-const GetClientLeadsValidation = [
-  // Validate pagination parameters
-  query("page")
-    .optional()
-    .trim()
-    .isInt({ min: 1 })
-    .withMessage("Page must be a positive integer"),
-
-  query("limit")
-    .optional()
-    .trim()
-    .isInt({ min: 1, max: 100 })
-    .withMessage("Limit must be between 1 and 100"),
-
-  // Validate search parameter
-  query("search")
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage("Search term must be between 1 and 100 characters"),
-
-  // Validate status parameter
-  query("status")
-    .optional()
-    .trim()
-    .isIn(["all", "new", "contacted", "converted", "lost"])
-    .withMessage("Status must be one of: all, new, contacted, converted, lost"),
-
-  // Validate source parameter
-  query("source")
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage("Source must be between 1 and 50 characters"),
-
-  // Validate owner parameter
-  query("owner")
-    .optional()
-    .trim()
-    .isIn(["me", "anyone"])
-    .withMessage("Owner must be either 'me' or 'anyone'"),
-
-  // Validate date parameters
-  query("startDate")
-    .optional()
-    .trim()
-    .isISO8601()
-    .withMessage("Start date must be a valid ISO 8601 date"),
-
-  query("endDate")
-    .optional()
-    .trim()
-    .isISO8601()
-    .withMessage("End date must be a valid ISO 8601 date")
-    .custom((endDate, { req }) => {
-      if (
-        endDate &&
-        req.query.startDate &&
-        new Date(endDate) < new Date(req.query.startDate)
-      ) {
-        throw new Error("End date must be after start date");
-      }
-      return true;
-    }),
-];
-
 export {
   CreateLeadValidation,
   UpdateLeadValidation,
   DeleteLeadValidation,
-  FilterLeadsValidation,
   GetClientLeadsValidation,
   GetClientLeadsByIdValidation,
   GetAllLeadsGroupedByClientsValidation,
-  GetLeadsSharedByClientValidation,
-  UpdateSharedLeadValidation,
-  DeleteSharedLeadValidation,
 };

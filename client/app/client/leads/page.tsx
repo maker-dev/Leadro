@@ -20,6 +20,7 @@ import LeadSourceOptions from "@/data/leadSourceOptions";
 import { getLeads, Lead, deleteLead } from "@/services/LeadService";
 import { toast } from "sonner";
 import formatDate from "@/utils/formateDate";
+import getSourceLabel from "@/utils/getSourceLabel";
 
 const rowsPerPageOptions = [8, 16, 32];
 
@@ -58,6 +59,7 @@ const Leads = () => {
   // API data state
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDelete, setLoadingDelete] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -178,6 +180,7 @@ const Leads = () => {
     if (!deletingLeadId) return;
 
     try {
+      setLoadingDelete(true);
       await deleteLead({ id: deletingLeadId });
       toast.success("Lead deleted successfully");
 
@@ -186,6 +189,7 @@ const Leads = () => {
     } catch (error: any) {
       toast.error("Failed to delete lead");
     } finally {
+      setLoadingDelete(false);
       setIsDeleteModalOpen(false);
       setDeletingLeadId(null);
     }
@@ -488,7 +492,9 @@ const Leads = () => {
               }
               if (colKey === "phone" || colKey === "source") {
                 return (
-                  row[colKey] || <span className="text-gray-400 italic">—</span>
+                  getSourceLabel(row[colKey]) || (
+                    <span className="text-gray-400 italic">—</span>
+                  )
                 );
               }
               if (colKey === "createdAt") {
@@ -570,6 +576,7 @@ const Leads = () => {
         description="Are you sure you want to delete this lead? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={loadingDelete}
       />
       {/* Confirm Download Modal */}
       <ConfirmDownloadModal
