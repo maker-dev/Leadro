@@ -1,10 +1,11 @@
 "use client";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import LeadDetails from "@/components/ui/cards/LeadDetails";
 import { useEffect, useState } from "react";
 import { usePageContext } from "@/context/PageTitleContext";
-import { getLead, Lead } from "@/services/LeadService";
+import { getLead, deleteLead, Lead } from "@/services/LeadService";
 import formatDate from "@/utils/formateDate";
+import { toast } from "sonner";
 
 const validStatuses = ["new", "contacted", "converted", "lost"] as const;
 const getValidStatus = (
@@ -15,6 +16,7 @@ const getValidStatus = (
 const ViewLeadPage = () => {
   const { setLabel, setTitle } = usePageContext();
   const { id } = useParams();
+  const router = useRouter();
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +56,17 @@ const ViewLeadPage = () => {
     );
   }
 
+  const handleDelete = async (leadId: string) => {
+    try {
+      await deleteLead({ id: leadId });
+      router.push("/client/leads");
+      toast.success("Lead deleted successfully");
+    } catch (error: any) {
+      toast.error("Failed to delete lead");
+      throw error; // Re-throw to let the component handle the loading state
+    }
+  };
+
   return (
     <LeadDetails
       lead={{
@@ -67,6 +80,7 @@ const ViewLeadPage = () => {
         extraFields: lead.extraFields,
         message: lead.message,
       }}
+      onDelete={handleDelete}
     />
   );
 };

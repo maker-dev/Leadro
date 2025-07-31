@@ -14,7 +14,6 @@ import LeadSourceOptions from "@/data/leadSourceOptions";
 import { CreateLeadPayload, updateLead, getLead } from "@/services/LeadService";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-
 // Get allowed source values
 const allowedSources = LeadSourceOptions.map((opt) => opt.value);
 const getValidSource = (source: any): UpdateLeadFormValues["source"] =>

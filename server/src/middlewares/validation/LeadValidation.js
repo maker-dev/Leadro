@@ -279,8 +279,67 @@ const DeleteLeadValidation = [
 
 /* ADMIN API */
 
-const GetClientLeadsByIdValidation = [
-  // Validate client ID parameter
+const GetAllClientsLeadsValidation = [
+  // Validate pagination parameters
+  query("page")
+    .optional()
+    .trim()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer"),
+
+  query("limit")
+    .optional()
+    .trim()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  // Validate search parameter
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Search term must be between 1 and 100 characters"),
+
+  // Validate status parameter
+  query("status")
+    .optional()
+    .trim()
+    .isIn(["all", "new", "contacted", "converted", "lost"])
+    .withMessage("Status must be one of: all, new, contacted, converted, lost"),
+
+  // Validate source parameter
+  query("source")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Source must be between 1 and 50 characters"),
+
+  // Validate date parameters
+  query("startDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("Start date must be a valid ISO 8601 date"),
+
+  query("endDate")
+    .optional()
+    .trim()
+    .isISO8601()
+    .withMessage("End date must be a valid ISO 8601 date")
+    .custom((endDate, { req }) => {
+      if (
+        endDate &&
+        req.query.startDate &&
+        new Date(endDate) < new Date(req.query.startDate)
+      ) {
+        throw new Error("End date must be after start date");
+      }
+      return true;
+    }),
+];
+
+const CreateLeadForClientValidation = [
+  // Required fields
   param("clientId")
     .trim()
     .notEmpty()
@@ -288,109 +347,163 @@ const GetClientLeadsByIdValidation = [
     .isMongoId()
     .withMessage("Invalid client ID format"),
 
-  // Validate search parameter
-  query("search")
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please provide a valid email")
+    .normalizeEmail(),
+
+  // Optional fields with validation if provided
+  body("name")
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Search term must be between 2 and 100 characters"),
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Name must be between 3 and 50 characters")
+    .matches(/^[a-zA-Z0-9\s\-'.]+$/)
+    .withMessage(
+      "Name can only contain letters, numbers, spaces, and basic punctuation"
+    ),
 
-  // Validate source parameter
-  query("source")
+  body("phone")
+    .optional()
+    .trim()
+    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .withMessage("Please provide a valid phone number"),
+
+  body("source")
     .optional()
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage("Source must be between 2 and 50 characters"),
 
-  // Validate status parameter
-  query("status")
-    .optional()
+  body("status")
     .trim()
     .isIn(["new", "contacted", "converted", "lost"])
     .withMessage("Status must be one of: new, contacted, converted, lost"),
 
-  // Validate date parameters
-  query("startDate")
+  body("message")
     .optional()
     .trim()
-    .isISO8601()
-    .withMessage("Start date must be a valid ISO 8601 date"),
+    .isLength({ max: 1000 })
+    .withMessage("Message cannot exceed 1000 characters"),
 
-  query("endDate")
-    .optional()
-    .trim()
-    .isISO8601()
-    .withMessage("End date must be a valid ISO 8601 date")
-    .custom((endDate, { req }) => {
-      if (
-        endDate &&
-        req.query.startDate &&
-        new Date(endDate) < new Date(req.query.startDate)
-      ) {
-        throw new Error("End date must be after start date");
+  // Validate any extra fields
+  body().custom((data) => {
+    const allowedFields = [
+      "email",
+      "name",
+      "phone",
+      "source",
+      "status",
+      "message",
+    ];
+    const extraFields = Object.keys(data).filter(
+      (key) => !allowedFields.includes(key)
+    );
+
+    // Validate each extra field
+    for (const field of extraFields) {
+      const value = data[field];
+
+      // Check if value is not null or undefined
+      if (value === null || value === undefined) {
+        throw new Error(`Extra field '${field}' cannot be null or undefined`);
       }
-      return true;
+
+      // Check if value is not an object or array (to keep extra fields simple)
+      if (typeof value === "object") {
+        throw new Error(
+          `Extra field '${field}' must be a simple value, not an object or array`
+        );
+      }
+
+      // Check field name format
+      if (!/^[a-zA-Z0-9_]+$/.test(field)) {
+        throw new Error(
+          `Extra field name '${field}' can only contain letters, numbers, and underscores`
+        );
+      }
+
+      // Check value length if it's a string
+      if (typeof value === "string" && value.length > 500) {
+        throw new Error(
+          `Extra field '${field}' value cannot exceed 500 characters`
+        );
+      }
+    }
+
+    return true;
+  }),
+];
+
+const DeleteAdminLeadValidation = [
+  // Validate ID parameter
+  param("id")
+    .trim()
+    .notEmpty()
+    .withMessage("Lead ID is required")
+    .isMongoId()
+    .withMessage("Invalid lead ID format")
+    .custom(async (id, { req }) => {
+      try {
+        // Find lead without ownership restriction (admin can delete any lead)
+        const lead = await Lead.findById(id);
+
+        if (!lead) {
+          throw new Error("Lead not found");
+        }
+
+        // Store lead in request for controller use
+        req.lead = lead;
+        return true;
+      } catch (error) {
+        if (error.name === "CastError") {
+          throw new Error("Invalid lead ID format");
+        }
+        throw error;
+      }
     }),
 ];
 
-const GetAllLeadsGroupedByClientsValidation = [
-  // Validate search parameter
-  query("search")
-    .optional()
+const UpdateAdminLeadValidation = [
+  // Validate ID parameter
+  param("id")
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Search term must be between 2 and 100 characters"),
+    .notEmpty()
+    .withMessage("Lead ID is required")
+    .isMongoId()
+    .withMessage("Invalid lead ID format")
+    .custom(async (id, { req }) => {
+      try {
+        // Find lead without ownership restriction (admin can update any lead)
+        const lead = await Lead.findById(id);
 
-  // Validate source parameter
-  query("source")
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage("Source must be between 2 and 50 characters"),
+        if (!lead) {
+          throw new Error("Lead not found");
+        }
 
-  // Validate status parameter
-  query("status")
-    .optional()
-    .trim()
-    .isIn(["new", "contacted", "converted", "lost"])
-    .withMessage("Status must be one of: new, contacted, converted, lost"),
-
-  // Validate date parameters
-  query("startDate")
-    .optional()
-    .trim()
-    .isISO8601()
-    .withMessage("Start date must be a valid ISO 8601 date"),
-
-  query("endDate")
-    .optional()
-    .trim()
-    .isISO8601()
-    .withMessage("End date must be a valid ISO 8601 date")
-    .custom((endDate, { req }) => {
-      if (
-        endDate &&
-        req.query.startDate &&
-        new Date(endDate) < new Date(req.query.startDate)
-      ) {
-        throw new Error("End date must be after start date");
+        // Store lead in request for controller use
+        req.lead = lead;
+        return true;
+      } catch (error) {
+        if (error.name === "CastError") {
+          throw new Error("Invalid lead ID format");
+        }
+        throw error;
       }
-      return true;
     }),
-
-  // Validate client name parameter
-  query("clientName")
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage("Client name must be between 2 and 50 characters"),
+  ...UpdateLeadBodyValidation,
 ];
 
 export {
   CreateLeadValidation,
   UpdateLeadValidation,
+  UpdateAdminLeadValidation,
   DeleteLeadValidation,
   GetClientLeadsValidation,
-  GetClientLeadsByIdValidation,
-  GetAllLeadsGroupedByClientsValidation,
+  GetAllClientsLeadsValidation,
+  CreateLeadForClientValidation,
+  DeleteAdminLeadValidation,
 };

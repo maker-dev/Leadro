@@ -16,90 +16,14 @@ import ConfirmDownloadModal from "@/components/modals/ConfirmDownloadModal";
 import Link from "next/link";
 import { usePageContext } from "@/context/PageTitleContext";
 import LeadSourceOptions from "@/data/leadSourceOptions";
-
-// Mock data for admin leads
-const fakeLeads = [
-  {
-    id: 1,
-    clientName: "Acme Corp",
-    senderName: "John Doe",
-    email: "john@example.com",
-    phone: "1234567890",
-    source: "Website",
-    status: "new",
-    createdAt: "2023-01-01",
-  },
-  {
-    id: 2,
-    clientName: "Beta LLC",
-    senderName: "Jane Smith",
-    email: "jane@example.com",
-    phone: "",
-    source: "Referral",
-    status: "contacted",
-    createdAt: "2023-01-02",
-  },
-  {
-    id: 3,
-    clientName: "Gamma Inc",
-    senderName: "Alice Brown",
-    email: "alice@example.com",
-    phone: "9876543210",
-    source: "Ad Campaign",
-    status: "converted",
-    createdAt: "2023-01-03",
-  },
-  {
-    id: 4,
-    clientName: "Delta Ltd",
-    senderName: "Bob Lee",
-    email: "bob@example.com",
-    phone: "",
-    source: "",
-    status: "lost",
-    createdAt: "2023-01-04",
-  },
-  {
-    id: 5,
-    clientName: "Acme Corp",
-    senderName: "Eve Adams",
-    email: "eve@example.com",
-    phone: "5551234567",
-    source: "Website",
-    status: "new",
-    createdAt: "2023-01-05",
-  },
-  {
-    id: 6,
-    clientName: "Beta LLC",
-    senderName: "Charlie Brown",
-    email: "charlie@example.com",
-    phone: "",
-    source: "Event",
-    status: "contacted",
-    createdAt: "2023-01-06",
-  },
-  {
-    id: 7,
-    clientName: "Gamma Inc",
-    senderName: "Dave Clark",
-    email: "dave@example.com",
-    phone: "",
-    source: "",
-    status: "converted",
-    createdAt: "2023-01-07",
-  },
-  {
-    id: 8,
-    clientName: "Acme Corp",
-    senderName: "Emily White",
-    email: "emily@example.com",
-    phone: "4445556666",
-    source: "Referral",
-    status: "lost",
-    createdAt: "2023-01-08",
-  },
-];
+import {
+  getAllClientsLeads,
+  AdminLead,
+  deleteAdminLead,
+} from "@/services/LeadService";
+import { toast } from "sonner";
+import formatDate from "@/utils/formateDate";
+import getSourceLabel from "@/utils/getSourceLabel";
 
 const rowsPerPageOptions = [8, 16, 32];
 
@@ -112,7 +36,7 @@ const statusStyles: Record<string, string> = {
 
 const columns: BaseTableColumn[] = [
   { key: "clientName", label: "Client Name" },
-  { key: "senderName", label: "Name" },
+  { key: "name", label: "Name" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "source", label: "Source" },
@@ -135,6 +59,19 @@ const Leads = () => {
     setTitle("Leads");
   }, [setLabel, setTitle]);
 
+  // API data state
+  const [leads, setLeads] = useState<AdminLead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 8,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
   //filter state
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
@@ -145,45 +82,115 @@ const Leads = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
 
+  // Applied filters state (what's actually being used for API calls)
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "all",
+    source: "all",
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+  });
+
   //ui state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingLeadId, setDeletingLeadId] = useState<number | null>(null);
+  const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   //pagination state
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
-  const totalRows = 1240;
+
+  // Load leads on component mount and when pagination or applied filters change
+  useEffect(() => {
+    loadLeads();
+  }, [page, rowsPerPage, appliedFilters]);
+
+  const loadLeads = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page,
+        limit: rowsPerPage,
+        search: appliedFilters.search || undefined,
+        status:
+          appliedFilters.status !== "all" ? appliedFilters.status : undefined,
+        source:
+          appliedFilters.source !== "all" ? appliedFilters.source : undefined,
+        startDate: appliedFilters.startDate?.toISOString(),
+        endDate: appliedFilters.endDate?.toISOString(),
+      };
+
+      const response = await getAllClientsLeads(params);
+      setLeads(response.data.leads);
+      setPagination(response.data.pagination);
+    } catch (error: any) {
+      toast.error("Failed to load leads");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // functions
-  const handleSearch = () => {
-    // Call API or handle search logic here
-    console.log({
-      searchTerm,
-      statusFilter,
-      sourceFilter,
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: searchTerm,
+      status: statusFilter,
+      source: sourceFilter,
       startDate,
       endDate,
     });
-    console.log("Search triggered for:", searchTerm);
+    setPage(1); // Reset to first page when applying filters
   };
 
   const handleSearchInputKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
     if (e.key === "Enter") {
-      handleSearch();
+      handleApplyFilters();
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleClearFilters = () => {
+    // Reset all filter inputs to default
+    setSearchTerm("");
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setDateRange([null, null]);
+
+    // Reset applied filters to default
+    setAppliedFilters({
+      search: "",
+      status: "all",
+      source: "all",
+      startDate: null,
+      endDate: null,
+    });
+
+    setPage(1);
+  };
+
+  const handleDelete = (id: string) => {
     setDeletingLeadId(id);
     setIsDeleteModalOpen(true);
   };
-  const handleConfirmDelete = () => {
-    // Here you would call your delete API or logic
-    setIsDeleteModalOpen(false);
-    setDeletingLeadId(null);
+  const handleConfirmDelete = async () => {
+    if (!deletingLeadId) return;
+
+    try {
+      setLoadingDelete(true);
+      await deleteAdminLead({ id: deletingLeadId });
+      toast.success("Lead deleted successfully");
+
+      // Reload the leads to reflect the deletion
+      await loadLeads();
+    } catch (error: any) {
+      console.log(error);
+      toast.error("Failed to delete lead");
+    } finally {
+      setLoadingDelete(false);
+      setIsDeleteModalOpen(false);
+      setDeletingLeadId(null);
+    }
   };
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
@@ -361,19 +368,14 @@ const Leads = () => {
         <hr className="my-6 border-gray-200" />
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <span className="text-gray-500 text-sm">
-            Showing {fakeLeads.length} of {fakeLeads.length} leads
+            Showing {leads.length} of {pagination.totalItems} leads
           </span>
           <div className="flex gap-2 w-full md:w-auto justify-end">
             <button
               className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               tabIndex={0}
               aria-label="Clear filters"
-              onClick={() => {
-                setSearchTerm("");
-                setStatusFilter("all");
-                setSourceFilter("all");
-                setDateRange([null, null]);
-              }}
+              onClick={handleClearFilters}
             >
               Clear Filters
             </button>
@@ -381,7 +383,7 @@ const Leads = () => {
               className="px-4 py-2 rounded-md bg-black text-white text-sm font-medium hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition"
               tabIndex={0}
               aria-label="Apply filters"
-              onClick={handleSearch}
+              onClick={handleApplyFilters}
             >
               Apply Filters
             </button>
@@ -417,11 +419,21 @@ const Leads = () => {
             </Link>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-gray-700 font-medium">
+                  Loading leads...
+                </span>
+              </div>
+            </div>
+          )}
           <BaseTable
             columns={columns}
-            data={fakeLeads}
-            rowKey={(row) => row.id}
+            data={leads}
+            rowKey={(row) => row._id}
             renderCell={(row, colKey) => {
               if (colKey === "clientName") {
                 return (
@@ -430,17 +442,20 @@ const Leads = () => {
                   )
                 );
               }
-              if (colKey === "senderName") {
+              if (colKey === "name") {
                 return (
-                  row.senderName || (
-                    <span className="text-gray-400 italic">—</span>
-                  )
+                  row.name || <span className="text-gray-400 italic">—</span>
                 );
               }
               if (colKey === "phone" || colKey === "source") {
                 return (
-                  row[colKey] || <span className="text-gray-400 italic">—</span>
+                  getSourceLabel(row[colKey]) || (
+                    <span className="text-gray-400 italic">—</span>
+                  )
                 );
+              }
+              if (colKey === "createdAt") {
+                return formatDate(row.createdAt);
               }
               if (colKey === "status") {
                 return (
@@ -456,7 +471,7 @@ const Leads = () => {
               if (colKey === "actions") {
                 return (
                   <div className="flex justify-end gap-2">
-                    <Link href={`/admin/leads/view/${row.id}`} passHref>
+                    <Link href={`/admin/leads/view/${row._id}`} passHref>
                       <button
                         tabIndex={0}
                         aria-label={`View lead ${row.email}`}
@@ -469,7 +484,7 @@ const Leads = () => {
                         />
                       </button>
                     </Link>
-                    <Link href={`/admin/leads/update/${row.id}`} passHref>
+                    <Link href={`/admin/leads/update/${row._id}`} passHref>
                       <button
                         tabIndex={0}
                         aria-label={`Modify lead ${row.email}`}
@@ -483,7 +498,7 @@ const Leads = () => {
                       </button>
                     </Link>
                     <button
-                      onClick={() => handleDelete(row.id)}
+                      onClick={() => handleDelete(row._id)}
                       tabIndex={0}
                       aria-label={`Delete lead ${row.email}`}
                       title="Delete"
@@ -502,7 +517,7 @@ const Leads = () => {
             }}
             page={page}
             rowsPerPage={rowsPerPage}
-            totalRows={totalRows}
+            totalRows={pagination.totalItems}
             onPageChange={setPage}
             onRowsPerPageChange={setRowsPerPage}
             rowsPerPageOptions={rowsPerPageOptions}
@@ -518,6 +533,7 @@ const Leads = () => {
         description="Are you sure you want to delete this lead? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={loadingDelete}
       />
       {/* Confirm Download Modal */}
       <ConfirmDownloadModal

@@ -1,6 +1,6 @@
 import Lead from "../models/Lead.js";
 import ClientAccess from "../models/ClientAccess.js";
-
+import User from "../models/User.js";
 /* CLIENT API */
 
 // Create new lead
@@ -286,104 +286,185 @@ const deleteLead = async (req, res) => {
 
 /* ADMIN API */
 
-// Get all leads grouped by clients (Admin only)
-const getAllLeadsGroupedByClients = async (req, res) => {
+// Get all leads from all clients with client information (Admin only)
+const getAllClientsLeads = async (req, res) => {
   try {
-    const { search, source, status, startDate, endDate, clientName } =
-      req.query;
+    const {
+      page = 1,
+      limit = 8,
+      search,
+      status,
+      source,
+      startDate,
+      endDate,
+    } = req.query;
 
-    // Build match stage for filtering
-    const matchStage = {};
+    // Build query
+    const query = {};
 
-    // Add search condition if search parameter exists
-    if (search) {
-      matchStage.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-      ];
+    // Note: We'll handle search after populating client data
+    // since we need to search in client name too
+
+    // Add status filter if provided
+    if (status && status !== "all") {
+      query.status = status;
     }
 
     // Add source filter if provided
-    if (source) {
-      matchStage.source = { $regex: source, $options: "i" };
-    }
-
-    // Add status filter if provided
-    if (status) {
-      matchStage.status = { $regex: status, $options: "i" };
+    if (source && source !== "all") {
+      query.source = source;
     }
 
     // Add date range filter if provided
     if (startDate || endDate) {
-      matchStage.createdAt = {};
+      query.createdAt = {};
       if (startDate) {
-        matchStage.createdAt.$gte = new Date(startDate);
+        query.createdAt.$gte = new Date(startDate);
       }
       if (endDate) {
-        matchStage.createdAt.$lte = new Date(endDate);
+        query.createdAt.$lte = new Date(endDate);
       }
     }
 
-    // Aggregate leads by client with filtering
-    const leadsByClient = await Lead.aggregate([
-      // Apply filters first
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: "users",
-          localField: "ownerId",
-          foreignField: "_id",
-          as: "client",
-        },
-      },
-      {
-        $unwind: "$client",
-      },
-      // Add client name filter if provided
-      ...(clientName
-        ? [
-            {
-              $match: {
-                "client.name": { $regex: clientName, $options: "i" },
-              },
-            },
-          ]
-        : []),
-      {
-        $group: {
-          _id: "$ownerId",
-          clientName: { $first: "$client.name" },
-          clientEmail: { $first: "$client.email" },
-          totalLeads: { $sum: 1 },
-          leads: {
-            $push: {
-              _id: "$_id",
-              name: "$name",
-              email: "$email",
-              phone: "$phone",
-              source: "$source",
-              status: "$status",
-              message: "$message",
-              extraFields: "$extraFields",
-              createdAt: "$createdAt",
-              updatedAt: "$updatedAt",
-            },
-          },
-        },
-      },
-      {
-        $sort: { clientName: 1 },
-      },
-    ]);
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    // Get leads with pagination and populate client information
+    let leads = await Lead.find(query)
+      .populate("ownerId", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Apply search across all fields including client name
+    if (search) {
+      leads = leads.filter((lead) => {
+        const searchLower = search.toLowerCase();
+        const leadName = (lead.name || "").toLowerCase();
+        const leadEmail = (lead.email || "").toLowerCase();
+        const leadPhone = (lead.phone || "").toLowerCase();
+        const clientName = (lead.ownerId?.name || "").toLowerCase();
+
+        return (
+          leadName.includes(searchLower) ||
+          leadEmail.includes(searchLower) ||
+          leadPhone.includes(searchLower) ||
+          clientName.includes(searchLower)
+        );
+      });
+    }
+
+    // Get total count after client name filtering
+    const totalItems = leads.length;
+    const totalPages = Math.ceil(totalItems / limitNum);
+
+    // Apply pagination
+    const skip = (pageNum - 1) * limitNum;
+    leads = leads.slice(skip, skip + limitNum);
+
+    // Format leads with client information
+    const leadsWithClient = leads.map((lead) => ({
+      ...lead,
+      clientName: lead.ownerId?.name || "Unknown Client",
+      ownerId: lead.ownerId?._id || lead.ownerId,
+    }));
 
     res.status(200).json({
       success: true,
-      count: leadsByClient.length,
-      data: leadsByClient,
+      data: {
+        leads: leadsWithClient,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems,
+          itemsPerPage: limitNum,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1,
+        },
+      },
     });
   } catch (error) {
-    console.error("Get all leads grouped by clients error:", error);
+    console.error("Get all clients leads error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get lead by ID (Admin only)
+const getAdminLeadById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find lead without ownership restriction (admin can view any lead)
+    const lead = await Lead.findById(id);
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: lead,
+    });
+  } catch (error) {
+    console.error("Get admin lead by ID error:", error);
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lead ID format",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Update lead (Admin only)
+const updateAdminLead = async (req, res) => {
+  try {
+    const { name, email, phone, source, message, status, ...extraFields } =
+      req.body;
+
+    // Lead is already validated and attached to request by middleware
+    const lead = req.lead;
+
+    // Build complete update object - replace all fields with what's provided
+    const updateData = {
+      name: name !== undefined ? name : null, // Allow null to delete the field
+      email,
+      phone: phone !== undefined ? phone : null,
+      source: source !== undefined ? source : null,
+      message: message !== undefined ? message : null,
+      status,
+    };
+
+    // Handle extra fields - replace all extra fields with what's provided
+    if (Object.keys(extraFields).length > 0) {
+      updateData.extraFields = new Map(Object.entries(extraFields));
+    } else {
+      updateData.extraFields = new Map(); // Clear all extra fields if none provided
+    }
+
+    // Update the lead
+    const updatedLead = await Lead.findByIdAndUpdate(lead._id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Lead updated successfully",
+      data: updatedLead,
+    });
+  } catch (error) {
+    console.error("Update admin lead error:", error);
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
@@ -398,60 +479,74 @@ const getAllLeadsGroupedByClients = async (req, res) => {
   }
 };
 
-// Get leads for a specific client (Admin only)
-const getClientLeadsById = async (req, res) => {
+// Create lead for a client (Admin only)
+const createLeadForClient = async (req, res) => {
   try {
     const { clientId } = req.params;
-    const { search, source, status, startDate, endDate } = req.query;
+    const { name, email, phone, source, message, status, ...extraFields } =
+      req.body;
 
-    // Build query
-    const query = { ownerId: clientId };
+    // Check if the client exists
+    const client = await User.findById(clientId);
 
-    // Add search condition if search parameter exists
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-      ];
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found",
+      });
     }
 
-    // Add source filter if provided
-    if (source) {
-      query.source = { $regex: source, $options: "i" };
-    }
+    // Create the lead
+    const lead = await Lead.create({
+      ownerId: clientId, // Assign to the specified client
+      name: name !== undefined ? name : null,
+      email,
+      phone: phone !== undefined ? phone : null,
+      source: source !== undefined ? source : null,
+      message: message !== undefined ? message : null,
+      status: status || "new", // Default to "new" if not provided
+      extraFields: new Map(Object.entries(extraFields)), // Convert extra fields to Map
+    });
 
-    // Add status filter if provided
-    if (status) {
-      query.status = { $regex: status, $options: "i" };
-    }
-
-    // Add date range filter if provided
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        query.createdAt.$lte = new Date(endDate);
-      }
-    }
-
-    const leads = await Lead.find(query).sort({ createdAt: -1 }); // Sort by newest first
-
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      count: leads.length,
-      data: leads,
+      message: "Lead created successfully for client",
+      data: lead,
     });
   } catch (error) {
-    console.error("Get client leads by ID error:", error);
+    console.error("Create lead for client error:", error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: Object.values(error.errors).map((err) => err.message),
+      });
+    }
     if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
         message: "Invalid client ID format",
       });
     }
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Delete lead (Admin only)
+const deleteAdminLead = async (req, res) => {
+  try {
+    // Lead is already validated and attached to request by middleware
+    await req.lead.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Lead deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete admin lead error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -501,9 +596,12 @@ export {
   createLead,
   getClientLeads,
   getLeadById,
+  getAdminLeadById,
   updateLead,
+  updateAdminLead,
   deleteLead,
-  getAllLeadsGroupedByClients,
-  getClientLeadsById,
+  getAllClientsLeads,
+  createLeadForClient,
+  deleteAdminLead,
   createLeadFromWebhook,
 };

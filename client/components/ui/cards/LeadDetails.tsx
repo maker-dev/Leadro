@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FiPhone, FiMail, FiEdit2, FiTrash2 } from "react-icons/fi";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
-import { deleteLead } from "@/services/LeadService";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import getSourceLabel from "@/utils/getSourceLabel";
+import { useAuth } from "@/context/AuthContext";
 
 type LeadDetailsProps = {
   lead: {
@@ -19,6 +19,7 @@ type LeadDetailsProps = {
     extraFields?: Record<string, string>;
     message?: string;
   };
+  onDelete?: (id: string) => Promise<void>;
 };
 
 const statusStyles: Record<string, string> = {
@@ -28,19 +29,18 @@ const statusStyles: Record<string, string> = {
   lost: "bg-red-50 text-red-600",
 };
 
-const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
+const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onDelete }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
+  const { role } = useAuth();
   const [loadingDelete, setLoadingDelete] = useState(false);
 
   const handleDeleteClick = () => setIsDeleteModalOpen(true);
   const handleConfirmDelete = async () => {
-    if (!lead.id) return;
+    if (!lead.id || !onDelete) return;
     try {
       setLoadingDelete(true);
-      await deleteLead({ id: lead.id });
-      router.push("/client/leads");
-      toast.success("Lead deleted successfully");
+      await onDelete(lead.id);
     } catch (error: any) {
       toast.error("Failed to delete lead");
     } finally {
@@ -74,7 +74,11 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead }) => {
             <span className="hidden sm:inline">Email</span>
           </a>
         )}
-        <Link href={`/client/leads/update/${lead.id}`}>
+        <Link
+          href={`${
+            role === "client" ? "/client/leads/update" : "/admin/leads/update"
+          }/${lead.id}`}
+        >
           <button
             type="button"
             className="flex items-center gap-2 px-5 py-2 rounded-md border border-gray-400 text-gray-900 font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"

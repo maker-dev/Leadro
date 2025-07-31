@@ -97,3 +97,73 @@ export const deleteLead = async (data: deleteLeadPayload) => {
   const response = await axios.delete(`/leads/client/${data.id}`);
   return response.data;
 };
+
+/* ADMIN API */
+
+// Admin lead type with client information
+export interface AdminLead {
+  _id: string;
+  name?: string;
+  email: string;
+  phone?: string;
+  source?: string;
+  status: string;
+  message?: string;
+  extraFields?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+  ownerId: string;
+  clientName: string;
+}
+
+// Admin API response type
+export interface GetAllClientsLeadsResponse {
+  success: boolean;
+  data: {
+    leads: AdminLead[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  };
+}
+
+// Query parameters for admin leads
+export interface GetAdminLeadsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  source?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const getAllClientsLeads = async (
+  params: GetAdminLeadsParams = {}
+): Promise<GetAllClientsLeadsResponse> => {
+  const response = await axios.get("/leads/admin/clients", { params });
+  return response.data;
+};
+
+export const deleteAdminLead = async (data: deleteLeadPayload) => {
+  const response = await axios.delete(`/leads/admin/clients/${data.id}`);
+  return response.data;
+};
+
+export const getAdminLeadById = async (data: getLeadPayload) => {
+  const response = await axios.get(`/leads/admin/clients/${data.id}`);
+  return response.data;
+};
+
+export const updateAdminLead = async (data: updateLeadPayload) => {
+  const response = await axios.put(
+    `/leads/admin/clients/${data.id}`,
+    data.data
+  );
+  return response.data;
+};
