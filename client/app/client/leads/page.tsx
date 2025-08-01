@@ -463,7 +463,7 @@ const Leads = () => {
                     <span className="group relative flex items-center justify-center">
                       <FaUser className="text-green-500 w-5 h-5" />
                       <span
-                        className="absolute left-1/2 -translate-x-1/2 top-8 z-10 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                        className="absolute left-1/2 -translate-x-1/2 bottom-8 z-20 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
                         style={{ minWidth: 120 }}
                       >
                         You own this lead
@@ -475,7 +475,7 @@ const Leads = () => {
                     <span className="group relative flex items-center justify-center">
                       <FiShare2 className="text-blue-500 w-5 h-5" />
                       <span
-                        className="absolute left-1/2 -translate-x-1/2 top-8 z-10 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
+                        className="absolute left-1/2 -translate-x-1/2 bottom-8 z-20 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity"
                         style={{ minWidth: 120 }}
                       >
                         Shared by {row.sharedBy}

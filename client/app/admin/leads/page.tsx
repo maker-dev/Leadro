@@ -35,7 +35,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const columns: BaseTableColumn[] = [
-  { key: "clientName", label: "Client Name" },
+  { key: "clientName", label: "Client" },
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },

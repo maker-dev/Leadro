@@ -482,12 +482,19 @@ const updateAdminLead = async (req, res) => {
 // Create lead for a client (Admin only)
 const createLeadForClient = async (req, res) => {
   try {
-    const { clientId } = req.params;
-    const { name, email, phone, source, message, status, ...extraFields } =
-      req.body;
+    const {
+      clientEmail,
+      name,
+      email,
+      phone,
+      source,
+      message,
+      status,
+      ...extraFields
+    } = req.body;
 
-    // Check if the client exists
-    const client = await User.findById(clientId);
+    // Check if the client exists by email
+    const client = await User.findOne({ email: clientEmail, role: "client" });
 
     if (!client) {
       return res.status(404).json({
@@ -498,7 +505,7 @@ const createLeadForClient = async (req, res) => {
 
     // Create the lead
     const lead = await Lead.create({
-      ownerId: clientId, // Assign to the specified client
+      ownerId: client._id, // Assign to the specified client
       name: name !== undefined ? name : null,
       email,
       phone: phone !== undefined ? phone : null,
@@ -520,12 +527,6 @@ const createLeadForClient = async (req, res) => {
         success: false,
         message: "Validation error",
         errors: Object.values(error.errors).map((err) => err.message),
-      });
-    }
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid client ID format",
       });
     }
     res.status(500).json({

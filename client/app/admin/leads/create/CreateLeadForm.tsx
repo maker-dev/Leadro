@@ -10,11 +10,18 @@ import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
 import BaseCard from "@/components/ui/cards/BaseCard";
 import { FiUser } from "react-icons/fi";
 import { FiPlus } from "react-icons/fi";
+import { FiLoader } from "react-icons/fi";
 import DropDownSelector, {
   DropDownOption,
 } from "@/components/ui/inputs/DropDownSelector";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LeadSourceOptions from "@/data/leadSourceOptions";
+import { getAllClients } from "@/services/AdminService";
+import {
+  createLeadForClient,
+  CreateLeadForClientPayload,
+} from "@/services/LeadService";
+import { toast } from "sonner";
 
 const statusOptions = [
   { value: "new", label: "New" },
@@ -23,90 +30,24 @@ const statusOptions = [
   { value: "lost", label: "Lost" },
 ];
 
-// Mock client options (replace with real data as needed)
-const clientOptions: DropDownOption[] = [
-  {
-    value: "john.smith@techcorp.com",
-    label: "John Smith",
-    subtext: "john.smith@techcorp.com",
-  },
-  {
-    value: "sarah.johnson@innovate.com",
-    label: "Sarah Johnson",
-    subtext: "sarah.johnson@innovate.com",
-  },
-  {
-    value: "michael.chen@startupco.com",
-    label: "Michael Chen",
-    subtext: "michael.chen@startupco.com",
-  },
-  {
-    value: "emma.wilson@designhub.io",
-    label: "Emma Wilson",
-    subtext: "emma.wilson@designhub.io",
-  },
-  {
-    value: "david.lee@marketplus.org",
-    label: "David Lee",
-    subtext: "david.lee@marketplus.org",
-  },
-  {
-    value: "nina.patel@bizconnect.net",
-    label: "Nina Patel",
-    subtext: "nina.patel@bizconnect.net",
-  },
-  {
-    value: "khalid.rahman@webtide.com",
-    label: "Khalid Rahman",
-    subtext: "khalid.rahman@webtide.com",
-  },
-  {
-    value: "isabelle.dupont@creativify.fr",
-    label: "Isabelle Dupont",
-    subtext: "isabelle.dupont@creativify.fr",
-  },
-  {
-    value: "liam.andersen@nordicsoft.se",
-    label: "Liam Andersen",
-    subtext: "liam.andersen@nordicsoft.se",
-  },
-  {
-    value: "fatima.elhassan@africode.io",
-    label: "Fatima Elhassan",
-    subtext: "fatima.elhassan@africode.io",
-  },
-  {
-    value: "oliver.nguyen@skyapps.vn",
-    label: "Oliver Nguyen",
-    subtext: "oliver.nguyen@skyapps.vn",
-  },
-  {
-    value: "maria.garcia@latindev.co",
-    label: "Maria Garcia",
-    subtext: "maria.garcia@latindev.co",
-  },
-  {
-    value: "hans.schmidt@codekraft.de",
-    label: "Hans Schmidt",
-    subtext: "hans.schmidt@codekraft.de",
-  },
-  {
-    value: "sofia.ribeiro@tecnobr.com",
-    label: "Sofia Ribeiro",
-    subtext: "sofia.ribeiro@tecnobr.com",
-  },
-  {
-    value: "alex.kim@pacdev.kr",
-    label: "Alex Kim",
-    subtext: "alex.kim@pacdev.kr",
-  },
-];
+// Client interface based on the API response
+interface Client {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const CreateLeadForm = () => {
   const router = useRouter();
   const {
     register,
     handleSubmit,
+    reset,
+    setError,
     formState: { errors, isSubmitting },
     control,
     setValue,
@@ -130,17 +71,70 @@ const CreateLeadForm = () => {
     name: "customFields",
   });
 
-  // State for selected client
+  // State for selected client and client options
   const [selectedClient, setSelectedClient] = useState<DropDownOption | null>(
     null
   );
+  const [clientOptions, setClientOptions] = useState<DropDownOption[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const handleAddCustomField = () => {
     append({ label: "", value: "" });
   };
 
-  const onSubmit = (data: CreateLeadFormValues) => {
-    console.log(data);
+  const onSubmit = async (data: CreateLeadFormValues) => {
+    // Check if a client is selected
+    if (!data.clientEmail) {
+      setClientError("Please select a client");
+      return;
+    }
+
+    // Transform custom fields from array of {label, value} to {label: value} format
+    const customFieldsObject = (data.customFields ?? []).reduce(
+      (acc, field) => {
+        if (field.label && field.value) {
+          acc[field.label] = field.value;
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const { customFields, ...baseFields } = data;
+    const transformedData = {
+      ...baseFields,
+      ...customFieldsObject,
+    };
+
+    // Remove empty string or null fields before sending
+    const cleanedData = Object.fromEntries(
+      Object.entries(transformedData).filter(
+        ([, value]) => value !== "" && value !== null
+      )
+    );
+
+    try {
+      await createLeadForClient(cleanedData as CreateLeadForClientPayload);
+      toast.success("Lead created successfully");
+      reset();
+      setSelectedClient(null); // Reset the dropdown selection
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Lead creation failed. Please try again.");
+      }
+    }
   };
 
   // When a client is selected, update the form value
@@ -148,6 +142,40 @@ const CreateLeadForm = () => {
     setSelectedClient(option);
     setValue("clientEmail", option ? option.value : "");
   };
+
+  // Fetch clients from the API
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setIsLoadingClients(true);
+        setClientError(null);
+
+        const response = await getAllClients();
+
+        if (response.success && response.data) {
+          // Transform client data to DropDownOption format
+          const transformedClients: DropDownOption[] = response.data.map(
+            (client: Client) => ({
+              value: client.email,
+              label: client.name,
+              subtext: client.email,
+            })
+          );
+
+          setClientOptions(transformedClients);
+        } else {
+          setClientError("Failed to load clients");
+        }
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        setClientError("Failed to load clients. Please try again.");
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+
+    fetchClients();
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -159,12 +187,19 @@ const CreateLeadForm = () => {
       >
         <div>
           <DropDownSelector
-            options={clientOptions}
+            options={isLoadingClients ? [] : clientOptions}
             value={selectedClient}
             onChange={handleClientChange}
-            placeholder="Select client..."
+            placeholder={
+              isLoadingClients ? "Loading clients..." : "Select client..."
+            }
             className="w-full"
           />
+          {clientError && (
+            <span className="text-xs text-red-500 mt-1 block">
+              {clientError}
+            </span>
+          )}
           {errors.clientEmail && (
             <span className="text-xs text-red-500 mt-1 block">
               {errors.clientEmail.message as string}
@@ -300,11 +335,18 @@ const CreateLeadForm = () => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               disabled={isSubmitting}
               aria-label="Save"
             >
-              Save
+              {isSubmitting ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
             </button>
           </div>
         </form>

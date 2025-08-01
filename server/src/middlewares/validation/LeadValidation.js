@@ -340,12 +340,13 @@ const GetAllClientsLeadsValidation = [
 
 const CreateLeadForClientValidation = [
   // Required fields
-  param("clientId")
+  body("clientEmail")
     .trim()
     .notEmpty()
-    .withMessage("Client ID is required")
-    .isMongoId()
-    .withMessage("Invalid client ID format"),
+    .withMessage("Client email is required")
+    .isEmail()
+    .withMessage("Please provide a valid client email")
+    .normalizeEmail(),
 
   body("email")
     .trim()
@@ -392,6 +393,7 @@ const CreateLeadForClientValidation = [
   // Validate any extra fields
   body().custom((data) => {
     const allowedFields = [
+      "clientEmail",
       "email",
       "name",
       "phone",

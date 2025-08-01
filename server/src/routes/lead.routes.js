@@ -783,19 +783,12 @@ router.get(
 
 /**
  * @swagger
- * /api/leads/admin/clients/{clientId}:
+ * /api/leads/admin/clients:
  *   post:
  *     summary: Create a new lead for a specific client (Admin only)
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: clientId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the client who will own the lead
  *     requestBody:
  *       required: true
  *       content:
@@ -803,8 +796,14 @@ router.get(
  *           schema:
  *             type: object
  *             required:
+ *               - clientEmail
  *               - email
  *             properties:
+ *               clientEmail:
+ *                 type: string
+ *                 format: email
+ *                 description: Email of the client who will own the lead
+ *                 example: "client@example.com"
  *               email:
  *                 type: string
  *                 format: email
@@ -915,7 +914,7 @@ router.get(
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: ["Email is required", "Invalid client ID format"]
+ *                   example: ["Client email is required", "Email is required"]
  *       401:
  *         description: Unauthorized
  *       403:
@@ -926,7 +925,7 @@ router.get(
  *         description: Server error
  */
 router.post(
-  "/admin/clients/:clientId",
+  "/admin/clients",
   verifyToken,
   verifyRole(["admin"]),
   CreateLeadForClientValidation,

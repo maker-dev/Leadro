@@ -167,3 +167,13 @@ export const updateAdminLead = async (data: updateLeadPayload) => {
   );
   return response.data;
 };
+
+// Admin create lead payload with client email
+export interface CreateLeadForClientPayload extends CreateLeadPayload {
+  clientEmail: string;
+}
+
+export const createLeadForClient = async (data: CreateLeadForClientPayload) => {
+  const response = await axios.post("/leads/admin/clients", data);
+  return response.data;
+};

@@ -297,7 +297,7 @@ const UpdateLeadForm = ({ leadId }: UpdateLeadFormType) => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+              className="px-6 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               disabled={isSubmitting}
               aria-label="Save"
             >
