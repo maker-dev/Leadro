@@ -15,14 +15,22 @@ import {
   FiClock,
   FiDatabase,
   FiCheckCircle,
+  FiLoader,
 } from "react-icons/fi";
 import { LuUsers } from "react-icons/lu";
+import Link from "next/link";
 import formSchema from "./schemas/InviteClientSchema";
 import EditPermissionsFormSchema from "./schemas/EditPermissionsSchema";
 import EditPermissionsFormValues from "./types/EditPermissionsType";
 import FormValues from "./types/InviteClientType";
 import BaseCard from "@/components/ui/cards/BaseCard";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import {
+  inviteClient,
+  getSharedWithMe,
+  getSharedByMe,
+} from "@/services/ClientAccessService";
+import { toast } from "sonner";
 
 // ===================== Permissions List & Types =====================
 const permissionsList = [
@@ -32,62 +40,23 @@ const permissionsList = [
 ] as const;
 type Perm = (typeof permissionsList)[number]["value"];
 
-// ===================== Mock Data =====================
-const sharedClients = [
-  {
-    email: "alice@company.com",
-    permissions: ["read", "update"],
-    status: "Active",
-    invitedDate: "2024-01-15",
-  },
-  {
-    email: "bob@startup.io",
-    permissions: ["read"],
-    status: "Pending",
-    invitedDate: "2024-01-10",
-  },
-  {
-    email: "carol@enterprise.com",
-    permissions: ["read", "update", "delete"],
-    status: "Active",
-    invitedDate: "2024-01-05",
-  },
-];
-
-const sharedWithMeClients = [
-  {
-    name: "David Wilson",
-    email: "david@techcorp.com",
-    permissions: ["read", "update"],
-    status: "Active",
-    date: "2024-01-12",
-    type: "accepted",
-  },
-  {
-    name: "Emma Davis",
-    email: "emma@solutions.com",
-    permissions: ["read"],
-    status: "Active",
-    date: "2024-01-08",
-    type: "accepted",
-  },
-  {
-    name: "Michael Chen",
-    email: "michael@innovate.com",
-    permissions: ["read", "update", "delete"],
-    status: "Pending",
-    date: "2024-01-18",
-    type: "pending",
-  },
-  {
-    name: "Sarah Johnson",
-    email: "sarah@growth.co",
-    permissions: ["read"],
-    status: "Pending",
-    date: "2024-01-20",
-    type: "pending",
-  },
-];
+// ===================== Data Types =====================
+interface SharedAccess {
+  id: string;
+  owner?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  sharedWith?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  permissions: string[];
+  sharedAt: string;
+  status: "pending" | "active";
+}
 
 function AccessManagementPage() {
   // ===================== Page Title Context =====================
@@ -97,13 +66,47 @@ function AccessManagementPage() {
     setTitle("Access Management");
   }, [setLabel, setTitle]);
 
+  // ===================== Data State =====================
+  const [sharedByMe, setSharedByMe] = useState<SharedAccess[]>([]);
+  const [sharedWithMe, setSharedWithMe] = useState<SharedAccess[]>([]);
+  const [isLoadingSharedByMe, setIsLoadingSharedByMe] = useState(true);
+  const [isLoadingSharedWithMe, setIsLoadingSharedWithMe] = useState(true);
+
+  // ===================== Fetch Data =====================
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [sharedByMeData, sharedWithMeData] = await Promise.all([
+          getSharedByMe(),
+          getSharedWithMe(),
+        ]);
+
+        if (sharedByMeData.success) {
+          setSharedByMe(sharedByMeData.data);
+        }
+        if (sharedWithMeData.success) {
+          setSharedWithMe(sharedWithMeData.data);
+        }
+      } catch (error: any) {
+        console.error("Error fetching sharing data:", error);
+        toast.error("Failed to load sharing data");
+      } finally {
+        setIsLoadingSharedByMe(false);
+        setIsLoadingSharedWithMe(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // ===================== Invite Client Form (react-hook-form) =====================
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     watch,
     setValue,
+    setError,
     trigger,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -139,16 +142,40 @@ function AccessManagementPage() {
     }
   };
 
-  const onSubmit = (data: FormValues) => {
-    // For now, just log the data
-    console.log("Invite submitted:", data);
+  const onSubmit = async (data: FormValues) => {
+    try {
+      await inviteClient({
+        email: data.email,
+        permissions: data.permissions,
+      });
+
+      toast.success("Invitation sent successfully!");
+      // Reset form after successful submission
+      setValue("email", "");
+      setValue("permissions", []);
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to invite client. Please try again.");
+      }
+    }
   };
 
   // ===================== Edit Permissions Modal State =====================
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<
-    null | (typeof sharedClients)[number]
-  >(null);
+  const [selectedClient, setSelectedClient] = useState<null | SharedAccess>(
+    null
+  );
 
   // ===================== Edit Permissions Modal Form (react-hook-form) =====================
   const {
@@ -165,7 +192,7 @@ function AccessManagementPage() {
   });
 
   // ===================== Edit Permissions Modal Handlers =====================
-  const handleOpenEditModal = (client: (typeof sharedClients)[number]) => {
+  const handleOpenEditModal = (client: SharedAccess) => {
     setSelectedClient(client);
     editReset({ permissions: client.permissions as Perm[] });
     setIsEditModalOpen(true);
@@ -200,7 +227,7 @@ function AccessManagementPage() {
     // For now, just log the new permissions
     console.log(
       "Updated permissions for",
-      selectedClient?.email,
+      selectedClient?.sharedWith?.email,
       data.permissions
     );
     handleCloseEditModal();
@@ -208,12 +235,12 @@ function AccessManagementPage() {
 
   // ===================== Delete Modal State =====================
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<
-    null | (typeof sharedClients)[number]
-  >(null);
+  const [clientToDelete, setClientToDelete] = useState<null | SharedAccess>(
+    null
+  );
 
   // ===================== Delete Modal Handlers =====================
-  const handleOpenDeleteModal = (client: (typeof sharedClients)[number]) => {
+  const handleOpenDeleteModal = (client: SharedAccess) => {
     setClientToDelete(client);
     setIsDeleteModalOpen(true);
   };
@@ -225,7 +252,7 @@ function AccessManagementPage() {
 
   const handleConfirmDelete = () => {
     // For now, just log the deleted client
-    console.log("Deleted client:", clientToDelete?.email);
+    console.log("Deleted client:", clientToDelete?.sharedWith?.email);
     handleCloseDeleteModal();
   };
 
@@ -297,11 +324,21 @@ function AccessManagementPage() {
           <div className="flex justify-end pt-4">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-md font-semibold shadow hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/60 cursor-pointer"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-md font-semibold shadow hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/60 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
               aria-label="Send Invitation"
             >
-              <FiMail className="w-5 h-5" aria-hidden="true" />
-              Send Invitation
+              {isSubmitting ? (
+                <>
+                  <FiLoader className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <FiMail className="w-5 h-5" aria-hidden="true" />
+                  Send Invitation
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -316,7 +353,12 @@ function AccessManagementPage() {
         description={"Manage access permissions for clients you've invited."}
       >
         <div className="overflow-x-auto">
-          {sharedClients.length === 0 ? (
+          {isLoadingSharedByMe ? (
+            <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
+              <FiLoader className="w-8 h-8 animate-spin text-gray-400 mb-2" />
+              <div className="text-gray-500">Loading shared clients...</div>
+            </div>
+          ) : sharedByMe.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
               <span className="text-4xl mb-3" aria-hidden="true">
                 🤝
@@ -340,13 +382,13 @@ function AccessManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {sharedClients.map((client) => (
+                {sharedByMe.map((client) => (
                   <tr
-                    key={client.email}
+                    key={client.id}
                     className="border-b border-gray-100 last:border-0"
                   >
                     <td className="py-3 px-2 font-medium text-gray-900">
-                      {client.email}
+                      {client.sharedWith?.email}
                     </td>
                     <td className="py-3 px-2">
                       <div className="flex gap-2">
@@ -371,7 +413,7 @@ function AccessManagementPage() {
                       </div>
                     </td>
                     <td className="py-3 px-2">
-                      {client.status === "Active" ? (
+                      {client.status === "active" ? (
                         <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
                           <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
                           Active
@@ -383,7 +425,9 @@ function AccessManagementPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-2">{client.invitedDate}</td>
+                    <td className="py-3 px-2">
+                      {new Date(client.sharedAt).toLocaleDateString()}
+                    </td>
                     <td className="py-3 px-2">
                       <div className="flex gap-2">
                         <button
@@ -432,7 +476,12 @@ function AccessManagementPage() {
         description="View leads shared by other clients and manage invitation requests."
       >
         <div className="overflow-x-auto">
-          {sharedWithMeClients.length === 0 ? (
+          {isLoadingSharedWithMe ? (
+            <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
+              <FiLoader className="w-8 h-8 animate-spin text-gray-400 mb-2" />
+              <div className="text-gray-500">Loading shared clients...</div>
+            </div>
+          ) : sharedWithMe.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
               <span className="text-4xl mb-3" aria-hidden="true">
                 👥
@@ -457,15 +506,15 @@ function AccessManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {sharedWithMeClients.map((client) => (
+                {sharedWithMe.map((client) => (
                   <tr
-                    key={client.email}
+                    key={client.id}
                     className="border-b border-gray-100 last:border-0"
                   >
                     <td className="py-3 px-2 font-medium text-gray-900">
-                      {client.name}
+                      {client.owner?.name}
                     </td>
-                    <td className="py-3 px-2">{client.email}</td>
+                    <td className="py-3 px-2">{client.owner?.email}</td>
                     <td className="py-3 px-2">
                       <div className="flex gap-2">
                         {client.permissions.includes("read") && (
@@ -489,7 +538,7 @@ function AccessManagementPage() {
                       </div>
                     </td>
                     <td className="py-3 px-2">
-                      {client.status === "Active" ? (
+                      {client.status === "active" ? (
                         <span className="inline-flex items-center px-4 py-1 rounded-full bg-black text-white text-sm font-semibold gap-2">
                           <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
                           Active
@@ -501,17 +550,20 @@ function AccessManagementPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-2">{client.date}</td>
+                    <td className="py-3 px-2">
+                      {new Date(client.sharedAt).toLocaleDateString()}
+                    </td>
                     <td className="py-3 px-2">
                       <div className="flex gap-2">
-                        {client.type === "accepted" ? (
-                          <button
-                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60"
+                        {client.status === "active" ? (
+                          <Link
+                            href="/client/leads"
+                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60 transition-colors"
                             aria-label="View Leads"
                           >
                             <FiDatabase className="w-5 h-5" />
                             View Leads
-                          </button>
+                          </Link>
                         ) : (
                           <>
                             <button
@@ -554,7 +606,7 @@ function AccessManagementPage() {
                 id="edit-permissions-modal-title"
                 className="text-lg font-bold text-gray-900 tracking-wide"
               >
-                Edit Permissions for {selectedClient.email}
+                Edit Permissions for {selectedClient?.sharedWith?.email}
               </h2>
             </div>
             <form

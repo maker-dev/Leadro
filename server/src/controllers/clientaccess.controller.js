@@ -58,62 +58,6 @@ const inviteClient = async (req, res) => {
   }
 };
 
-const shareAccess = async (req, res) => {
-  try {
-    let { permissions } = req.body;
-
-    // targetClient is already validated and stored in req by the validation middleware
-    const targetClient = req.targetClient;
-
-    // If 'update' or 'delete' is present, ensure 'read' is also included
-    if (
-      permissions &&
-      (permissions.includes("update") || permissions.includes("delete")) &&
-      !permissions.includes("read")
-    ) {
-      permissions.push("read");
-    }
-
-    // Create new sharing access
-    const clientAccess = await ClientAccess.create({
-      ownerId: req.user.userId,
-      sharedWithId: targetClient._id,
-      permissions: permissions || ["read"], // Use default read permission if not specified
-    });
-
-    // Populate owner and shared with details for response
-    const populatedAccess = await ClientAccess.findById(clientAccess._id)
-      .populate("ownerId", "name email")
-      .populate("sharedWithId", "name email");
-
-    res.status(201).json({
-      success: true,
-      message: "Access shared successfully",
-      data: {
-        id: populatedAccess._id,
-        owner: populatedAccess.ownerId,
-        sharedWith: populatedAccess.sharedWithId,
-        permissions: populatedAccess.permissions,
-        createdAt: populatedAccess.createdAt,
-        updatedAt: populatedAccess.updatedAt,
-      },
-    });
-  } catch (error) {
-    console.error("Share access error:", error);
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
-        errors: Object.values(error.errors).map((err) => err.message),
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
 const getSharedWithMe = async (req, res) => {
   try {
     // Find all ClientAccess records where the current user is the sharedWithId
@@ -128,6 +72,7 @@ const getSharedWithMe = async (req, res) => {
       owner: access.ownerId, // { name, email, _id }
       permissions: access.permissions,
       sharedAt: access.createdAt,
+      status: access.status,
       id: access._id,
     }));
 
@@ -157,6 +102,7 @@ const getSharedByMe = async (req, res) => {
       sharedWith: access.sharedWithId, // { name, email, _id }
       permissions: access.permissions,
       sharedAt: access.createdAt,
+      status: access.status,
       id: access._id,
     }));
 
@@ -238,26 +184,45 @@ const removeSharingAccess = async (req, res) => {
   }
 };
 
-const getSharingDetails = async (req, res) => {
+const respondToSharingInvitation = async (req, res) => {
   try {
+    const { action } = req.body; // "accept" or "reject"
     const access = req.access;
-    const populatedAccess = await ClientAccess.findById(access._id)
-      .populate("ownerId", "name email")
-      .populate("sharedWithId", "name email");
 
-    res.status(200).json({
-      success: true,
-      data: {
-        id: populatedAccess._id,
-        owner: populatedAccess.ownerId,
-        sharedWith: populatedAccess.sharedWithId,
-        permissions: populatedAccess.permissions,
-        createdAt: populatedAccess.createdAt,
-        updatedAt: populatedAccess.updatedAt,
-      },
-    });
+    if (action === "accept") {
+      // Update status to active
+      access.status = "active";
+      await access.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Sharing invitation accepted successfully.",
+        data: {
+          id: access._id,
+          status: access.status,
+          updatedAt: access.updatedAt,
+        },
+      });
+    } else if (action === "reject") {
+      // Remove the sharing relationship
+      await access.deleteOne();
+
+      res.status(200).json({
+        success: true,
+        message: "Sharing invitation rejected successfully.",
+        data: {
+          removedAccessId: access._id,
+          removedAt: new Date(),
+        },
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid action. Must be 'accept' or 'reject'.",
+      });
+    }
   } catch (error) {
-    console.error("Get sharing details error:", error);
+    console.error("Respond to sharing invitation error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -266,11 +231,10 @@ const getSharingDetails = async (req, res) => {
 };
 
 export {
-  shareAccess,
   getSharedWithMe,
   getSharedByMe,
   updateSharingPermissions,
   removeSharingAccess,
-  getSharingDetails,
+  respondToSharingInvitation,
   inviteClient,
 };

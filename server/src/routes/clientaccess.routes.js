@@ -1,18 +1,16 @@
 import express from "express";
 import {
-  shareAccess,
   getSharedWithMe,
   getSharedByMe,
   updateSharingPermissions,
   removeSharingAccess,
-  getSharingDetails,
+  respondToSharingInvitation,
   inviteClient,
 } from "../controllers/clientaccess.controller.js";
 import {
-  ShareAccessValidation,
   UpdateSharingPermissionsValidation,
   RemoveSharingAccessValidation,
-  GetSharingDetailsValidation,
+  RespondToSharingInvitationValidation,
   InviteClientValidation,
 } from "../middlewares/validation/clientAccessValidation.js";
 import validate from "../middlewares/validate.js";
@@ -145,54 +143,6 @@ router.post(
 
 /**
  * @swagger
- * /api/client-access/share:
- *   post:
- *     summary: Share access with another client
- *     tags: [ClientAccess]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "client2@example.com"
- *               permissions:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [read, update, delete]
- *                 example: ["read", "update"]
- *     responses:
- *       201:
- *         description: Access shared successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Client access required
- *       500:
- *         description: Server error
- */
-router.post(
-  "/share",
-  verifyToken,
-  verifyRole(["client"]),
-  ShareAccessValidation,
-  validate,
-  shareAccess
-);
-
-/**
- * @swagger
  * /api/client-access/shared-with-me:
  *   get:
  *     summary: Get all accesses shared with the authenticated client
@@ -202,6 +152,56 @@ router.post(
  *     responses:
  *       200:
  *         description: Accesses retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   description: Number of shared accesses
+ *                   example: 2
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Access ID
+ *                         example: "507f1f77bcf86cd799439011"
+ *                       owner:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: "507f1f77bcf86cd799439012"
+ *                           name:
+ *                             type: string
+ *                             example: "John Doe"
+ *                           email:
+ *                             type: string
+ *                             format: email
+ *                             example: "john@example.com"
+ *                       permissions:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           enum: [read, update, delete]
+ *                         example: ["read", "update"]
+ *                       sharedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the access was shared
+ *                         example: "2024-01-15T10:30:00.000Z"
+ *                       status:
+ *                         type: string
+ *                         enum: [pending, active]
+ *                         description: Status of the shared access
+ *                         example: "active"
  *       401:
  *         description: Unauthorized
  *       403:
@@ -227,6 +227,56 @@ router.get(
  *     responses:
  *       200:
  *         description: Accesses retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: integer
+ *                   description: Number of shared accesses
+ *                   example: 3
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Access ID
+ *                         example: "507f1f77bcf86cd799439011"
+ *                       sharedWith:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: "507f1f77bcf86cd799439012"
+ *                           name:
+ *                             type: string
+ *                             example: "Jane Smith"
+ *                           email:
+ *                             type: string
+ *                             format: email
+ *                             example: "jane@example.com"
+ *                       permissions:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           enum: [read, update, delete]
+ *                         example: ["read", "update"]
+ *                       sharedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the access was shared
+ *                         example: "2024-01-15T10:30:00.000Z"
+ *                       status:
+ *                         type: string
+ *                         enum: [pending, active]
+ *                         description: Status of the shared access
+ *                         example: "pending"
  *       401:
  *         description: Unauthorized
  *       403:
@@ -329,9 +379,9 @@ router.delete(
 
 /**
  * @swagger
- * /api/client-access/sharing-details/{accessId}:
- *   get:
- *     summary: Get details of a specific sharing relationship
+ * /api/client-access/respond-invitation/{accessId}:
+ *   put:
+ *     summary: Accept or reject a sharing invitation
  *     tags: [ClientAccess]
  *     security:
  *       - bearerAuth: []
@@ -341,28 +391,72 @@ router.delete(
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the sharing access
+ *         description: ID of the sharing access invitation
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [accept, reject]
+ *                 description: Whether to accept or reject the invitation
+ *                 example: "accept"
  *     responses:
  *       200:
- *         description: Sharing details retrieved successfully
+ *         description: Invitation responded to successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Sharing invitation accepted successfully."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       description: Access ID (for accept) or removed access ID (for reject)
+ *                     status:
+ *                       type: string
+ *                       enum: [active]
+ *                       description: New status (only for accept)
+ *                       example: "active"
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the access was updated (only for accept)
+ *                     removedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the access was removed (only for reject)
  *       400:
- *         description: Validation error
+ *         description: Validation error or invalid action
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - Not involved in this sharing
+ *         description: Forbidden - Client access required
  *       404:
- *         description: Sharing not found
+ *         description: Invitation not found
  *       500:
  *         description: Server error
  */
-router.get(
-  "/sharing-details/:accessId",
+router.put(
+  "/respond-invitation/:accessId",
   verifyToken,
   verifyRole(["client"]),
-  GetSharingDetailsValidation,
+  RespondToSharingInvitationValidation,
   validate,
-  getSharingDetails
+  respondToSharingInvitation
 );
 
 export default router;
