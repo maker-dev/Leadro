@@ -512,46 +512,54 @@ const Leads = () => {
                 );
               }
               if (colKey === "actions") {
+                const permissions = row.permissions || [];
+
                 return (
-                  <div className="flex justify-end gap-2">
-                    <Link href={`/client/leads/view/${row._id}`} passHref>
+                  <div className="flex justify-start gap-2">
+                    {permissions.includes("read") && (
+                      <Link href={`/client/leads/view/${row._id}`} passHref>
+                        <button
+                          tabIndex={0}
+                          aria-label={`View lead ${row.email}`}
+                          title="View"
+                          className="group p-2 rounded-full bg-gray-100 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        >
+                          <FaEye
+                            className="text-blue-500 group-hover:text-blue-600"
+                            size={18}
+                          />
+                        </button>
+                      </Link>
+                    )}
+                    {permissions.includes("update") && (
+                      <Link href={`/client/leads/update/${row._id}`} passHref>
+                        <button
+                          tabIndex={0}
+                          aria-label={`Modify lead ${row.email}`}
+                          title="Modify"
+                          className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+                        >
+                          <FaEdit
+                            className="text-yellow-500 group-hover:text-yellow-600"
+                            size={18}
+                          />
+                        </button>
+                      </Link>
+                    )}
+                    {permissions.includes("delete") && (
                       <button
+                        onClick={() => handleDelete(row._id)}
                         tabIndex={0}
-                        aria-label={`View lead ${row.email}`}
-                        title="View"
-                        className="group p-2 rounded-full bg-gray-100 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        aria-label={`Delete lead ${row.email}`}
+                        title="Delete"
+                        className="group p-2 rounded-full bg-gray-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
                       >
-                        <FaEye
-                          className="text-blue-500 group-hover:text-blue-600"
+                        <FaTrash
+                          className="text-red-500 group-hover:text-red-600"
                           size={18}
                         />
                       </button>
-                    </Link>
-                    <Link href={`/client/leads/update/${row._id}`} passHref>
-                      <button
-                        tabIndex={0}
-                        aria-label={`Modify lead ${row.email}`}
-                        title="Modify"
-                        className="group p-2 rounded-full bg-gray-100 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-                      >
-                        <FaEdit
-                          className="text-yellow-500 group-hover:text-yellow-600"
-                          size={18}
-                        />
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(row._id)}
-                      tabIndex={0}
-                      aria-label={`Delete lead ${row.email}`}
-                      title="Delete"
-                      className="group p-2 rounded-full bg-gray-100 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
-                    >
-                      <FaTrash
-                        className="text-red-500 group-hover:text-red-600"
-                        size={18}
-                      />
-                    </button>
+                    )}
                   </div>
                 );
               }

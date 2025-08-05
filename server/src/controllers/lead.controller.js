@@ -58,14 +58,16 @@ const getClientLeads = async (req, res) => {
     // Build query
     const query = {};
 
-    // Handle owner filter
+    // Handle owner filter and get shared accesses in one query
+    let sharedAccesses = [];
     if (owner === "me") {
       query.ownerId = req.user.userId;
     } else if (owner === "anyone") {
-      // Get both owned leads and shared leads
-      const sharedAccesses = await ClientAccess.find({
+      // Get shared accesses with read permission for query building
+      sharedAccesses = await ClientAccess.find({
         sharedWithId: req.user.userId,
         permissions: { $in: ["read"] },
+        status: "active",
       });
       const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
 
@@ -131,15 +133,65 @@ const getClientLeads = async (req, res) => {
       .limit(limitNum)
       .lean();
 
-    // Add owner information to leads
+    // Optimize permission mapping - only get permissions for shared leads we actually have
+    const sharedLeadOwnerIds = leads
+      .filter((lead) => lead.ownerId.toString() !== req.user.userId)
+      .map((lead) => lead.ownerId);
+
+    let permissionsMap = new Map();
+    if (sharedLeadOwnerIds.length > 0) {
+      // Get permissions only for the owners of leads we actually have
+      const relevantSharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        ownerId: { $in: sharedLeadOwnerIds },
+        status: "active",
+      });
+
+      permissionsMap = new Map(
+        relevantSharedAccesses.map((access) => [
+          access.ownerId.toString(),
+          access.permissions,
+        ])
+      );
+    }
+
+    // Add owner information and permissions to leads
     const leadsWithOwner = leads.map((lead) => {
       const isOwned = lead.ownerId.toString() === req.user.userId;
+      const permissions = isOwned
+        ? ["read", "update", "delete"]
+        : permissionsMap.get(lead.ownerId.toString()) || [];
+
       return {
         ...lead,
         owner: isOwned ? "me" : "shared",
-        sharedBy: isOwned ? null : lead.ownerId, // You might want to populate this with actual owner name
+        sharedBy: isOwned ? null : lead.ownerId, // Will be populated with owner name
+        permissions: permissions, // Include permissions for each lead
       };
     });
+
+    // Populate owner names for shared leads
+    if (leadsWithOwner.some((lead) => lead.owner === "shared")) {
+      const ownerIds = [
+        ...new Set(
+          leadsWithOwner
+            .filter((lead) => lead.owner === "shared")
+            .map((lead) => lead.sharedBy)
+        ),
+      ];
+
+      const owners = await User.find({ _id: { $in: ownerIds } }, "name");
+      const ownerMap = new Map(
+        owners.map((owner) => [owner._id.toString(), owner.name])
+      );
+
+      leadsWithOwner.forEach((lead) => {
+        if (lead.owner === "shared" && lead.sharedBy) {
+          lead.sharedBy =
+            ownerMap.get(lead.sharedBy.toString()) || "Unknown Client";
+        }
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -169,8 +221,28 @@ const getLeadById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find lead and verify ownership
-    const lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
+    // First, try to find lead owned by the user
+    let lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
+
+    // If not found, check if user has read access through ClientAccess
+    if (!lead) {
+      // Get shared access records for this user
+      const sharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        permissions: { $in: ["read"] },
+        status: "active", // Only include active sharing relationships
+      });
+
+      const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
+
+      // Try to find lead owned by users who have shared with this user
+      if (sharedOwnerIds.length > 0) {
+        lead = await Lead.findOne({
+          _id: id,
+          ownerId: { $in: sharedOwnerIds },
+        });
+      }
+    }
 
     if (!lead) {
       return res.status(404).json({
@@ -205,8 +277,28 @@ const updateLead = async (req, res) => {
     const { name, email, phone, source, message, status, ...extraFields } =
       req.body;
 
-    // Find lead and verify ownership
-    const lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
+    // First, try to find lead owned by the user
+    let lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
+
+    // If not found, check if user has update access through ClientAccess
+    if (!lead) {
+      // Get shared access records for this user with update permission
+      const sharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        permissions: { $in: ["update"] },
+        status: "active", // Only include active sharing relationships
+      });
+
+      const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
+
+      // Try to find lead owned by users who have shared with this user
+      if (sharedOwnerIds.length > 0) {
+        lead = await Lead.findOne({
+          _id: id,
+          ownerId: { $in: sharedOwnerIds },
+        });
+      }
+    }
 
     if (!lead) {
       return res.status(404).json({
@@ -268,8 +360,43 @@ const updateLead = async (req, res) => {
 // Delete lead
 const deleteLead = async (req, res) => {
   try {
-    // Lead is already validated and attached to request by middleware
-    await req.lead.deleteOne();
+    const { id } = req.params;
+
+    // First, try to find lead owned by the user
+    let lead = await Lead.findOne({
+      _id: id,
+      ownerId: req.user.userId,
+    });
+
+    // If not found, check if user has delete access through ClientAccess
+    if (!lead) {
+      // Get shared access records for this user with delete permission
+      const sharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        permissions: { $in: ["delete"] },
+        status: "active", // Only include active sharing relationships
+      });
+
+      const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
+
+      // Try to find lead owned by users who have shared with this user
+      if (sharedOwnerIds.length > 0) {
+        lead = await Lead.findOne({
+          _id: id,
+          ownerId: { $in: sharedOwnerIds },
+        });
+      }
+    }
+
+    if (!lead) {
+      return res.status(404).json({
+        success: false,
+        message: "Lead not found or unauthorized",
+      });
+    }
+
+    // Delete the lead
+    await lead.deleteOne();
 
     res.status(200).json({
       success: true,
@@ -277,6 +404,12 @@ const deleteLead = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete lead error:", error);
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lead ID format",
+      });
+    }
     res.status(500).json({
       success: false,
       message: "Internal server error",

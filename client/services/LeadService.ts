@@ -40,6 +40,7 @@ export interface Lead {
   updatedAt: string;
   owner: "me" | "shared";
   sharedBy?: string;
+  permissions?: string[];
 }
 
 // API response type

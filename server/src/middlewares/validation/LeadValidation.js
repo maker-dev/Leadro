@@ -1,5 +1,6 @@
 import { body, param, query } from "express-validator";
 import Lead from "../../models/Lead.js";
+import ClientAccess from "../../models/ClientAccess.js";
 
 /* CLIENT API */
 
@@ -240,6 +241,7 @@ const UpdateLeadBodyValidation = [
 const UpdateLeadValidation = [
   // Validate ID parameter
   param("id")
+    .trim()
     .notEmpty()
     .withMessage("Lead ID is required")
     .isMongoId()
@@ -253,28 +255,8 @@ const DeleteLeadValidation = [
     .trim()
     .notEmpty()
     .withMessage("Lead ID is required")
-    .custom(async (id, { req }) => {
-      try {
-        // Find lead and verify ownership
-        const lead = await Lead.findOne({
-          _id: id,
-          ownerId: req.user.userId,
-        });
-
-        if (!lead) {
-          throw new Error("Lead not found or unauthorized");
-        }
-
-        // Store lead in request for controller use
-        req.lead = lead;
-        return true;
-      } catch (error) {
-        if (error.name === "CastError") {
-          throw new Error("Invalid lead ID format");
-        }
-        throw error;
-      }
-    }),
+    .isMongoId()
+    .withMessage("Invalid lead ID format"),
 ];
 
 /* ADMIN API */
