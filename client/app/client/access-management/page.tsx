@@ -29,6 +29,9 @@ import {
   inviteClient,
   getSharedWithMe,
   getSharedByMe,
+  updateClientAccess,
+  deleteClientAccess,
+  respondToInvitation,
 } from "@/services/ClientAccessService";
 import { toast } from "sonner";
 
@@ -150,6 +153,13 @@ function AccessManagementPage() {
       });
 
       toast.success("Invitation sent successfully!");
+
+      // Refresh the shared by me data to show the new invitation
+      const sharedByMeData = await getSharedByMe();
+      if (sharedByMeData.success) {
+        setSharedByMe(sharedByMeData.data);
+      }
+
       // Reset form after successful submission
       setValue("email", "");
       setValue("permissions", []);
@@ -223,14 +233,38 @@ function AccessManagementPage() {
     setEditValue("permissions", Array.from(current));
   };
 
-  const onEditSubmit = (data: EditPermissionsFormValues) => {
-    // For now, just log the new permissions
-    console.log(
-      "Updated permissions for",
-      selectedClient?.sharedWith?.email,
-      data.permissions
-    );
-    handleCloseEditModal();
+  const onEditSubmit = async (data: EditPermissionsFormValues) => {
+    if (!selectedClient) return;
+
+    try {
+      await updateClientAccess({
+        id: selectedClient.id,
+        permissions: data.permissions,
+      });
+
+      toast.success("Permissions updated successfully!");
+
+      // Refresh the data
+      const sharedByMeData = await getSharedByMe();
+      if (sharedByMeData.success) {
+        setSharedByMe(sharedByMeData.data);
+      }
+
+      handleCloseEditModal();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update permissions. Please try again.");
+      }
+    }
   };
 
   // ===================== Delete Modal State =====================
@@ -250,10 +284,70 @@ function AccessManagementPage() {
     setClientToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
-    // For now, just log the deleted client
-    console.log("Deleted client:", clientToDelete?.sharedWith?.email);
-    handleCloseDeleteModal();
+  // ===================== Respond to Invitation Handlers =====================
+  const handleRespondToInvitation = async (
+    client: SharedAccess,
+    action: "accept" | "reject"
+  ) => {
+    try {
+      await respondToInvitation({
+        id: client.id,
+        action: action,
+      });
+
+      const actionText = action === "accept" ? "accepted" : "rejected";
+      toast.success(`Invitation ${actionText} successfully!`);
+
+      // Refresh the data
+      const sharedWithMeData = await getSharedWithMe();
+      if (sharedWithMeData.success) {
+        setSharedWithMe(sharedWithMeData.data);
+      }
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error(`Failed to ${action} invitation. Please try again.`);
+      }
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!clientToDelete) return;
+
+    try {
+      await deleteClientAccess(clientToDelete.id);
+
+      toast.success("Client access removed successfully!");
+
+      // Refresh the data
+      const sharedByMeData = await getSharedByMe();
+      if (sharedByMeData.success) {
+        setSharedByMe(sharedByMeData.data);
+      }
+
+      handleCloseDeleteModal();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to remove client access. Please try again.");
+      }
+    }
   };
 
   // ===================== Render =====================
@@ -569,6 +663,9 @@ function AccessManagementPage() {
                             <button
                               className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-green-400 text-green-600 font-semibold shadow hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400"
                               aria-label="Accept"
+                              onClick={() =>
+                                handleRespondToInvitation(client, "accept")
+                              }
                             >
                               <FiCheckCircle className="w-5 h-5" />
                               Accept
@@ -576,6 +673,9 @@ function AccessManagementPage() {
                             <button
                               className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-red-300 text-red-500 font-semibold shadow hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
                               aria-label="Reject"
+                              onClick={() =>
+                                handleRespondToInvitation(client, "reject")
+                              }
                             >
                               <FiTrash2 className="w-5 h-5" />
                               Reject

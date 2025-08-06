@@ -223,6 +223,7 @@ const getLeadById = async (req, res) => {
 
     // First, try to find lead owned by the user
     let lead = await Lead.findOne({ _id: id, ownerId: req.user.userId });
+    let permissions = ["read", "update", "delete"]; // Default full permissions for own leads
 
     // If not found, check if user has read access through ClientAccess
     if (!lead) {
@@ -241,6 +242,16 @@ const getLeadById = async (req, res) => {
           _id: id,
           ownerId: { $in: sharedOwnerIds },
         });
+
+        // If found, get the specific permissions for this lead's owner
+        if (lead) {
+          const specificAccess = await ClientAccess.findOne({
+            sharedWithId: req.user.userId,
+            ownerId: lead.ownerId,
+            status: "active",
+          });
+          permissions = specificAccess ? specificAccess.permissions : [];
+        }
       }
     }
 
@@ -251,9 +262,15 @@ const getLeadById = async (req, res) => {
       });
     }
 
+    // Add permissions to the lead data
+    const leadWithPermissions = {
+      ...lead.toObject(),
+      permissions: permissions,
+    };
+
     res.status(200).json({
       success: true,
-      data: lead,
+      data: leadWithPermissions,
     });
   } catch (error) {
     console.error("Get lead by ID error:", error);

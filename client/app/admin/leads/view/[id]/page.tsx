@@ -84,6 +84,7 @@ const ViewLeadPage = () => {
         extraFields: lead.extraFields,
         message: lead.message,
       }}
+      permissions={lead.permissions || []}
       onDelete={handleDelete}
     />
   );

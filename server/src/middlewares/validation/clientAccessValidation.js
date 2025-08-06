@@ -100,13 +100,6 @@ const UpdateSharingPermissionsValidation = [
         throw new Error("Not owner of this sharing or sharing not found.");
       }
 
-      // Only allow updating permissions for active sharing relationships
-      if (access.status !== "active") {
-        throw new Error(
-          "Can only update permissions for active sharing relationships."
-        );
-      }
-
       req.access = access;
       return true;
     }),

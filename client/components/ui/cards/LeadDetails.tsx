@@ -3,7 +3,6 @@ import Link from "next/link";
 import { FiPhone, FiMail, FiEdit2, FiTrash2 } from "react-icons/fi";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import getSourceLabel from "@/utils/getSourceLabel";
 import { useAuth } from "@/context/AuthContext";
 
@@ -19,6 +18,7 @@ type LeadDetailsProps = {
     extraFields?: Record<string, string>;
     message?: string;
   };
+  permissions?: string[];
   onDelete?: (id: string) => Promise<void>;
 };
 
@@ -29,11 +29,18 @@ const statusStyles: Record<string, string> = {
   lost: "bg-red-50 text-red-600",
 };
 
-const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onDelete }) => {
+const LeadDetails: React.FC<LeadDetailsProps> = ({
+  lead,
+  permissions = [],
+  onDelete,
+}) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const router = useRouter();
   const { role } = useAuth();
   const [loadingDelete, setLoadingDelete] = useState(false);
+
+  // Check if user has update/delete permissions
+  const canUpdate = permissions.includes("update") || permissions.length === 0; // If no permissions array, assume full access (own lead)
+  const canDelete = permissions.includes("delete") || permissions.length === 0; // If no permissions array, assume full access (own lead)
 
   const handleDeleteClick = () => setIsDeleteModalOpen(true);
   const handleConfirmDelete = async () => {
@@ -74,29 +81,33 @@ const LeadDetails: React.FC<LeadDetailsProps> = ({ lead, onDelete }) => {
             <span className="hidden sm:inline">Email</span>
           </a>
         )}
-        <Link
-          href={`${
-            role === "client" ? "/client/leads/update" : "/admin/leads/update"
-          }/${lead.id}`}
-        >
+        {canUpdate && (
+          <Link
+            href={`${
+              role === "client" ? "/client/leads/update" : "/admin/leads/update"
+            }/${lead.id}`}
+          >
+            <button
+              type="button"
+              className="flex items-center gap-2 px-5 py-2 rounded-md border border-gray-400 text-gray-900 font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
+              aria-label="Edit"
+            >
+              <FiEdit2 className="w-5 h-5" />{" "}
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          </Link>
+        )}
+        {canDelete && (
           <button
             type="button"
-            className="flex items-center gap-2 px-5 py-2 rounded-md border border-gray-400 text-gray-900 font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
-            aria-label="Edit"
+            className="flex items-center gap-2 px-5 py-2 rounded-md border border-red-400 text-red-600 font-medium bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200 transition"
+            aria-label="Delete"
+            onClick={handleDeleteClick}
           >
-            <FiEdit2 className="w-5 h-5" />{" "}
-            <span className="hidden sm:inline">Edit</span>
+            <FiTrash2 className="w-5 h-5" />{" "}
+            <span className="hidden sm:inline">Delete</span>
           </button>
-        </Link>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-5 py-2 rounded-md border border-red-400 text-red-600 font-medium bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200 transition"
-          aria-label="Delete"
-          onClick={handleDeleteClick}
-        >
-          <FiTrash2 className="w-5 h-5" />{" "}
-          <span className="hidden sm:inline">Delete</span>
-        </button>
+        )}
       </div>
       <div className="px-4 md:px-6 pt-8 pb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
