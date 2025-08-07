@@ -8,11 +8,13 @@ import {
   deleteApiKey,
   getAllApiKeysForCurrentClient,
   getApiKeySummaryForCurrentClient,
+  getAllClientsApiKeyStats,
 } from "../controllers/apikey.controller.js";
 import {
   generateApiKeyValidation,
   updateApiKeyLabelValidation,
   deleteApiKeyValidation,
+  getAllClientsApiKeyStatsValidation,
 } from "../middlewares/validation/ApiKeyValidation.js";
 
 const router = express.Router();
@@ -462,6 +464,177 @@ router.get(
   verifyToken,
   verifyRole(["client"]),
   getApiKeySummaryForCurrentClient
+);
+
+/**
+ * @swagger
+ * /api/apikey/admin/clients:
+ *   get:
+ *     summary: Get all clients with their API key statistics (Admin only)
+ *     tags: [API Keys]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieve statistics about all clients' API keys with filtering and pagination. This endpoint is restricted to admin users only.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 8
+ *         description: Number of items per page
+ *         example: 8
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           maxLength: 100
+ *         description: Search term to filter by client name or email (case-insensitive)
+ *         example: "john"
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, revoked]
+ *         description: Filter by API key status
+ *         example: "active"
+ *       - in: query
+ *         name: totalusagecount_min
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Minimum total usage count filter
+ *         example: 100
+ *       - in: query
+ *         name: totalusagecount_max
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Maximum total usage count filter
+ *         example: 1000
+ *       - in: query
+ *         name: totalkeysnumber_min
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Minimum total API keys number filter
+ *         example: 2
+ *       - in: query
+ *         name: totalkeysnumber_max
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Maximum total API keys number filter
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: Client API key statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       clientName:
+ *                         type: string
+ *                         description: Name of the client
+ *                         example: "John Doe"
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                         description: Email address of the client
+ *                         example: "john.doe@example.com"
+ *                       totalApiKeys:
+ *                         type: integer
+ *                         description: Total number of API keys owned by the client
+ *                         example: 3
+ *                       activeKeys:
+ *                         type: integer
+ *                         description: Number of active (not revoked) API keys
+ *                         example: 2
+ *                       revokedKeys:
+ *                         type: integer
+ *                         description: Number of revoked API keys
+ *                         example: 1
+ *                       totalUsageCount:
+ *                         type: integer
+ *                         description: Total usage count across all API keys
+ *                         example: 1250
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                       description: Current page number
+ *                       example: 1
+ *                     totalPages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *                       example: 3
+ *                     totalItems:
+ *                       type: integer
+ *                       description: Total number of items
+ *                       example: 25
+ *                     itemsPerPage:
+ *                       type: integer
+ *                       description: Number of items per page
+ *                       example: 8
+ *                     hasNextPage:
+ *                       type: boolean
+ *                       description: Whether there is a next page
+ *                       example: true
+ *                     hasPrevPage:
+ *                       type: boolean
+ *                       description: Whether there is a previous page
+ *                       example: false
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Page must be a positive integer", "Total usage count minimum cannot be greater than maximum"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication token
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/admin/clients",
+  verifyToken,
+  verifyRole(["admin"]),
+  getAllClientsApiKeyStatsValidation,
+  validate,
+  getAllClientsApiKeyStats
 );
 
 export default router;

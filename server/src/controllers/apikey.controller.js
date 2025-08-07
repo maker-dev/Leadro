@@ -10,7 +10,6 @@ const generateApiKey = async (req, res) => {
     // Generate a secure random API key
     const randomPart = crypto.randomBytes(32).toString("hex");
     const apiKey = `sk-${randomPart}`;
-
     // Create new API key record
     const newApiKey = await ApiKey.create({
       clientId: clientId,
@@ -34,6 +33,7 @@ const generateApiKey = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     console.error("Generate API key error:", error);
     res.status(500).json({
       success: false,
@@ -153,10 +153,130 @@ const getApiKeySummaryForCurrentClient = async (req, res) => {
   }
 };
 
+// ===================== ADMIN: Get all clients with their API key stats =====================
+const getAllClientsApiKeyStats = async (req, res) => {
+  try {
+    // Parse filters from query
+    let {
+      page = 1,
+      limit = 8,
+      search = "",
+      status, // "active" or "revoked"
+      totalusagecount_min,
+      totalusagecount_max,
+      totalkeysnumber_min,
+      totalkeysnumber_max,
+    } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    // Build match stage for status
+    let matchStage = {};
+    if (status === "active") {
+      matchStage.revoked = false;
+    } else if (status === "revoked") {
+      matchStage.revoked = true;
+    }
+
+    // Aggregate API key stats per client
+    let stats = await ApiKey.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: "$clientId",
+          totalApiKeys: { $sum: 1 },
+          activeKeys: { $sum: { $cond: [{ $eq: ["$revoked", false] }, 1, 0] } },
+          revokedKeys: { $sum: { $cond: [{ $eq: ["$revoked", true] }, 1, 0] } },
+          totalUsageCount: { $sum: "$usageCount" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "client",
+        },
+      },
+      { $unwind: "$client" },
+      {
+        $project: {
+          clientName: "$client.name",
+          email: "$client.email",
+          totalApiKeys: 1,
+          activeKeys: 1,
+          revokedKeys: 1,
+          totalUsageCount: 1,
+        },
+      },
+    ]);
+
+    // Filter by search (name or email, case-insensitive)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      stats = stats.filter(
+        (item) =>
+          (item.clientName &&
+            item.clientName.toLowerCase().includes(searchLower)) ||
+          (item.email && item.email.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Filter by totalusagecount min/max
+    if (totalusagecount_min !== undefined) {
+      stats = stats.filter(
+        (item) => item.totalUsageCount >= Number(totalusagecount_min)
+      );
+    }
+    if (totalusagecount_max !== undefined) {
+      stats = stats.filter(
+        (item) => item.totalUsageCount <= Number(totalusagecount_max)
+      );
+    }
+    // Filter by totalkeysnumber min/max
+    if (totalkeysnumber_min !== undefined) {
+      stats = stats.filter(
+        (item) => item.totalApiKeys >= Number(totalkeysnumber_min)
+      );
+    }
+    if (totalkeysnumber_max !== undefined) {
+      stats = stats.filter(
+        (item) => item.totalApiKeys <= Number(totalkeysnumber_max)
+      );
+    }
+
+    // Pagination
+    const totalItems = stats.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    const skip = (page - 1) * limit;
+    const paginated = stats.slice(skip, skip + limit);
+
+    res.status(200).json({
+      success: true,
+      data: paginated,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Get all clients API key stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve clients API key stats",
+    });
+  }
+};
+
 export {
   generateApiKey,
   updateApiKeyLabel,
   deleteApiKey,
   getAllApiKeysForCurrentClient,
   getApiKeySummaryForCurrentClient,
+  getAllClientsApiKeyStats,
 };

@@ -1,4 +1,4 @@
-import { body, param } from "express-validator";
+import { body, param, query } from "express-validator";
 import ApiKey from "../../models/ApiKey.js";
 
 const generateApiKeyValidation = [
@@ -128,8 +128,76 @@ const deleteApiKeyValidation = [
     }),
 ];
 
+const getAllClientsApiKeyStatsValidation = [
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer")
+    .toInt(),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100")
+    .toInt(),
+  query("search")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Search term must be less than 100 characters"),
+  query("status")
+    .optional()
+    .isIn(["active", "revoked"])
+    .withMessage("Status must be either 'active' or 'revoked'"),
+  query("totalusagecount_min")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Total usage count minimum must be a non-negative integer")
+    .toInt(),
+  query("totalusagecount_max")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Total usage count maximum must be a non-negative integer")
+    .toInt(),
+  query("totalkeysnumber_min")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Total keys number minimum must be a non-negative integer")
+    .toInt(),
+  query("totalkeysnumber_max")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Total keys number maximum must be a non-negative integer")
+    .toInt(),
+  // Custom validation to ensure min <= max for ranges
+  query().custom((query) => {
+    if (
+      query.totalusagecount_min !== undefined &&
+      query.totalusagecount_max !== undefined
+    ) {
+      if (query.totalusagecount_min > query.totalusagecount_max) {
+        throw new Error(
+          "Total usage count minimum cannot be greater than maximum"
+        );
+      }
+    }
+    if (
+      query.totalkeysnumber_min !== undefined &&
+      query.totalkeysnumber_max !== undefined
+    ) {
+      if (query.totalkeysnumber_min > query.totalkeysnumber_max) {
+        throw new Error(
+          "Total keys number minimum cannot be greater than maximum"
+        );
+      }
+    }
+    return true;
+  }),
+];
+
 export {
   generateApiKeyValidation,
   updateApiKeyLabelValidation,
   deleteApiKeyValidation,
+  getAllClientsApiKeyStatsValidation,
 };
