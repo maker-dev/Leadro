@@ -1,9 +1,19 @@
-import express from 'express';
-import validate from '../middlewares/validate.js';
-import verifyToken from '../middlewares/verifyToken.js';
-import verifyRole from '../middlewares/verifyRole.js';
-import { generateApiKey, toggleApiKeyStatus, regenerateApiKey, getClientApiKey, getAllApiKeysWithClients, getApiKeyByClientId } from '../controllers/apikey.controller.js';
-import { generateApiKeyValidation, toggleApiKeyStatusValidation, regenerateApiKeyValidation, getClientApiKeyValidation, getApiKeyByClientIdValidation } from '../middlewares/validation/ApiKeyValidation.js';
+import express from "express";
+import validate from "../middlewares/validate.js";
+import verifyToken from "../middlewares/verifyToken.js";
+import verifyRole from "../middlewares/verifyRole.js";
+import {
+  generateApiKey,
+  updateApiKeyLabel,
+  deleteApiKey,
+  getAllApiKeysForCurrentClient,
+  getApiKeySummaryForCurrentClient,
+} from "../controllers/apikey.controller.js";
+import {
+  generateApiKeyValidation,
+  updateApiKeyLabelValidation,
+  deleteApiKeyValidation,
+} from "../middlewares/validation/ApiKeyValidation.js";
 
 const router = express.Router();
 
@@ -16,19 +26,13 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/apikey/{clientId}:
+ * /api/apikey/generate-key:
  *   post:
- *     summary: Generate a new API key for a client
+ *     summary: Generate a new API key for the authenticated client
  *     tags: [API Keys]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: clientId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the client
+ *     description: Generate a new API key for the authenticated client. Multiple API keys can be created per client with different labels. The API key is returned immediately for use.
  *     requestBody:
  *       required: true
  *       content:
@@ -36,13 +40,14 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - expiresAt
+ *               - label
  *             properties:
- *               expiresAt:
+ *               label:
  *                 type: string
- *                 format: date
- *                 description: Expiration date for the API key (ISO 8601 format)
- *                 example: "2024-12-31"
+ *                 minLength: 3
+ *                 maxLength: 100
+ *                 description: A descriptive label for the API key (letters, numbers, spaces, hyphens, and underscores only)
+ *                 example: "Production API Key"
  *     responses:
  *       201:
  *         description: API key generated successfully
@@ -68,27 +73,38 @@ const router = express.Router();
  *                       type: string
  *                       description: ID of the client who owns this API key
  *                       example: "60d21b4667d0d8992e610c85"
+ *                     label:
+ *                       type: string
+ *                       description: The label given to this API key
+ *                       example: "Production API Key"
  *                     key:
  *                       type: string
- *                       description: The generated API key
+ *                       description: The generated API key (returned only once)
  *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                     expiresAt:
- *                       type: string
- *                       format: date-time
- *                       description: When the API key expires
- *                       example: "2024-12-31T23:59:59.999Z"
  *                     revoked:
  *                       type: boolean
  *                       description: Whether the API key is revoked
  *                       example: false
+ *                     usageCount:
+ *                       type: number
+ *                       description: Number of times this API key has been used
+ *                       example: 0
+ *                     lastUsedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the API key was last used (null if never used)
+ *                       nullable: true
+ *                       example: null
  *                     createdAt:
  *                       type: string
  *                       format: date-time
  *                       description: When the API key was created
+ *                       example: "2024-01-01T00:00:00.000Z"
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
  *                       description: When the API key was last updated
+ *                       example: "2024-01-01T00:00:00.000Z"
  *       400:
  *         description: Validation error
  *         content:
@@ -106,121 +122,39 @@ const router = express.Router();
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: ["Expiration date is required"]
+ *                   example: ["Label is required", "Label must be between 3 and 100 characters"]
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized - Invalid or missing authentication token
  *       403:
- *         description: Forbidden - Admin access required
+ *         description: Forbidden - Client role required
  *       500:
  *         description: Server error
  */
-router.post('/:clientId', verifyToken, verifyRole(['admin']), generateApiKeyValidation, validate, generateApiKey);
+router.post(
+  "/generate-key",
+  verifyToken,
+  verifyRole(["client"]),
+  generateApiKeyValidation,
+  validate,
+  generateApiKey
+);
 
 /**
  * @swagger
- * /api/apikey/{apiKeyId}:
+ * /api/apikey/{apiKeyId}/label:
  *   patch:
- *     summary: Toggle API key status (activate/revoke)
+ *     summary: Update the label of an API key
  *     tags: [API Keys]
  *     security:
  *       - bearerAuth: []
+ *     description: Update the label of an API key owned by the authenticated client. The label must be unique among the client's API keys.
  *     parameters:
  *       - in: path
  *         name: apiKeyId
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the API key
- *     responses:
- *       200:
- *         description: API key status toggled successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "API key revoked successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                       description: API key ID
- *                       example: "60d21b4667d0d8992e610c85"
- *                     clientId:
- *                       type: string
- *                       description: ID of the client who owns this API key
- *                       example: "60d21b4667d0d8992e610c85"
- *                     key:
- *                       type: string
- *                       description: The API key
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                     expiresAt:
- *                       type: string
- *                       format: date-time
- *                       description: When the API key expires
- *                       example: "2024-12-31T23:59:59.999Z"
- *                     revoked:
- *                       type: boolean
- *                       description: Whether the API key is revoked
- *                       example: true
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                       description: When the API key was created
- *                     updatedAt:
- *                       type: string
- *                       format: date-time
- *                       description: When the API key was last updated
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Validation error"
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["Invalid API key ID format"]
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Admin access required
- *       404:
- *         description: API key not found
- *       500:
- *         description: Server error
- */
-router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatusValidation, validate, toggleApiKeyStatus);
-
-/**
- * @swagger
- * /api/apikey/{apiKeyId}/regenerate:
- *   patch:
- *     summary: Regenerate an existing API key
- *     tags: [API Keys]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: apiKeyId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the API key
+ *         description: ID of the API key to update
  *     requestBody:
  *       required: true
  *       content:
@@ -228,16 +162,17 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *           schema:
  *             type: object
  *             required:
- *               - expiresAt
+ *               - label
  *             properties:
- *               expiresAt:
+ *               label:
  *                 type: string
- *                 format: date
- *                 description: New expiration date for the API key (ISO 8601 format)
- *                 example: "2024-12-31"
+ *                 minLength: 3
+ *                 maxLength: 100
+ *                 description: New label for the API key (letters, numbers, spaces, hyphens, and underscores only)
+ *                 example: "Updated Production Key"
  *     responses:
  *       200:
- *         description: API key regenerated successfully
+ *         description: API key label updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -248,7 +183,7 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "API key regenerated successfully"
+ *                   example: "API key label updated successfully"
  *                 data:
  *                   type: object
  *                   properties:
@@ -260,27 +195,33 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *                       type: string
  *                       description: ID of the client who owns this API key
  *                       example: "60d21b4667d0d8992e610c85"
- *                     key:
+ *                     label:
  *                       type: string
- *                       description: The newly generated API key
- *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                     expiresAt:
- *                       type: string
- *                       format: date-time
- *                       description: When the API key expires
- *                       example: "2024-12-31T23:59:59.999Z"
+ *                       description: The updated label for this API key
+ *                       example: "Updated Production Key"
  *                     revoked:
  *                       type: boolean
  *                       description: Whether the API key is revoked
  *                       example: false
+ *                     usageCount:
+ *                       type: number
+ *                       description: Number of times this API key has been used
+ *                       example: 5
+ *                     lastUsedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the API key was last used
+ *                       example: "2024-01-15T10:30:00.000Z"
  *                     createdAt:
  *                       type: string
  *                       format: date-time
  *                       description: When the API key was created
+ *                       example: "2024-01-01T00:00:00.000Z"
  *                     updatedAt:
  *                       type: string
  *                       format: date-time
  *                       description: When the API key was last updated
+ *                       example: "2024-01-15T11:00:00.000Z"
  *       400:
  *         description: Validation error
  *         content:
@@ -298,30 +239,103 @@ router.patch('/:apiKeyId', verifyToken, verifyRole(['admin']), toggleApiKeyStatu
  *                   type: array
  *                   items:
  *                     type: string
- *                   example: ["Expiration date is required"]
+ *                   example: ["Label is required", "An API key with this label already exists for this client"]
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized - Invalid or missing authentication token
  *       403:
- *         description: Forbidden - Admin access required
+ *         description: Forbidden - Client role required
  *       404:
- *         description: API key not found
+ *         description: API key not found or access denied
  *       500:
  *         description: Server error
  */
-router.patch('/:apiKeyId/regenerate', verifyToken, verifyRole(['admin']), regenerateApiKeyValidation, validate, regenerateApiKey);
+router.patch(
+  "/:apiKeyId/label",
+  verifyToken,
+  verifyRole(["client"]),
+  updateApiKeyLabelValidation,
+  validate,
+  updateApiKeyLabel
+);
+
+/**
+ * @swagger
+ * /api/apikey/{apiKeyId}:
+ *   delete:
+ *     summary: Delete an API key
+ *     tags: [API Keys]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Delete an API key owned by the authenticated client. This action cannot be undone.
+ *     parameters:
+ *       - in: path
+ *         name: apiKeyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the API key to delete
+ *     responses:
+ *       200:
+ *         description: API key deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "API key deleted successfully"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Validation error"
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["API key not found or access denied"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication token
+ *       403:
+ *         description: Forbidden - Client role required
+ *       404:
+ *         description: API key not found or access denied
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  "/:apiKeyId",
+  verifyToken,
+  verifyRole(["client"]),
+  deleteApiKeyValidation,
+  validate,
+  deleteApiKey
+);
 
 /**
  * @swagger
  * /api/apikey/client:
  *   get:
- *     summary: Get the current user's API key
+ *     summary: Get all API keys for the authenticated client
  *     tags: [API Keys]
  *     security:
  *       - bearerAuth: []
- *     description: Retrieve the active API key for the authenticated client user. Returns the API key details if found, or null if no active key exists.
+ *     description: Retrieve all API keys owned by the authenticated client user.
  *     responses:
  *       200:
- *         description: API key retrieved successfully
+ *         description: API keys retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -332,232 +346,74 @@ router.patch('/:apiKeyId/regenerate', verifyToken, verifyRole(['admin']), regene
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "API key retrieved successfully"
- *                 data:
- *                   oneOf:
- *                     - type: object
- *                       properties:
- *                         key:
- *                           type: string
- *                           description: The API key for making authenticated requests
- *                           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
- *                         expiresAt:
- *                           type: string
- *                           format: date-time
- *                           description: When the API key expires
- *                           example: "2024-12-31T23:59:59.999Z"
- *                         revoked:
- *                           type: boolean
- *                           description: Whether the API key is revoked
- *                           example: false
- *                     - type: null
- *                       description: No active API key found
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "No active API key found for this user"
- *       401:
- *         description: Unauthorized - Invalid or missing authentication token
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Authorization token is required"
- *       403:
- *         description: Forbidden - Client role required
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Access denied. Client role required."
- *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Failed to retrieve API key"
- */
-router.get('/client', verifyToken, verifyRole(['client']), getClientApiKeyValidation, validate, getClientApiKey);
-
-/**
- * @swagger
- * /api/apikey/admin/clients:
- *   get:
- *     summary: Get all verified clients with their API keys (Admin only)
- *     tags: [API Keys]
- *     security:
- *       - bearerAuth: []
- *     description: Retrieve all verified clients and their API key information. Returns clients with their API keys if they have them, or null if they don't.
- *     responses:
- *       200:
- *         description: Clients and API keys retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Clients and API keys retrieved successfully"
+ *                   example: "API keys retrieved successfully"
  *                 data:
  *                   type: array
- *                   description: Array of clients with their API key information
  *                   items:
  *                     type: object
  *                     properties:
  *                       _id:
  *                         type: string
- *                         description: Client ID
+ *                         description: API key ID
  *                         example: "60d21b4667d0d8992e610c85"
- *                       clientName:
+ *                       clientId:
  *                         type: string
- *                         description: Name of the client
- *                         example: "John Doe"
- *                       clientEmail:
+ *                         description: ID of the client who owns this API key
+ *                         example: "60d21b4667d0d8992e610c85"
+ *                       label:
  *                         type: string
- *                         description: Email of the client
- *                         example: "john@example.com"
- *                       clientCreatedAt:
+ *                         description: The label for this API key
+ *                         example: "Production API Key"
+ *                       revoked:
+ *                         type: boolean
+ *                         description: Whether the API key is revoked
+ *                         example: false
+ *                       usageCount:
+ *                         type: number
+ *                         description: Number of times this API key has been used
+ *                         example: 0
+ *                       lastUsedAt:
  *                         type: string
  *                         format: date-time
- *                         description: When the client was created
+ *                         description: When the API key was last used (null if never used)
+ *                         nullable: true
+ *                         example: null
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the API key was created
  *                         example: "2024-01-01T00:00:00.000Z"
- *                       hasApiKey:
- *                         type: boolean
- *                         description: Whether the client has an API key
- *                         example: true
- *                       apiKey:
- *                         oneOf:
- *                           - type: object
- *                             description: API key information if client has one
- *                             properties:
- *                               _id:
- *                                 type: string
- *                                 description: API key ID
- *                                 example: "60d21b4667d0d8992e610c85"
- *                               key:
- *                                 type: string
- *                                 description: The actual API key
- *                                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                               revoked:
- *                                 type: boolean
- *                                 description: Whether the API key is revoked
- *                                 example: false
- *                               expiresAt:
- *                                 type: string
- *                                 format: date-time
- *                                 description: When the API key expires
- *                                 example: "2024-12-31T23:59:59.999Z"
- *                               createdAt:
- *                                 type: string
- *                                 format: date-time
- *                                 description: When the API key was created
- *                               updatedAt:
- *                                 type: string
- *                                 format: date-time
- *                                 description: When the API key was last updated
- *                               isExpired:
- *                                 type: boolean
- *                                 description: Whether the API key has expired
- *                                 example: false
- *                               isActive:
- *                                 type: boolean
- *                                 description: Whether the API key is active (not revoked and not expired)
- *                                 example: true
- *                           - type: null
- *                             description: No API key found for this client
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: When the API key was last updated
+ *                         example: "2024-01-01T00:00:00.000Z"
  *       401:
  *         description: Unauthorized - Invalid or missing authentication token
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Authorization token is required"
  *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Access denied. Admin role required."
+ *         description: Forbidden - Client role required
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Failed to retrieve clients and API keys"
  */
-router.get('/admin/clients', verifyToken, verifyRole(['admin']), getAllApiKeysWithClients);
+router.get(
+  "/client",
+  verifyToken,
+  verifyRole(["client"]),
+  getAllApiKeysForCurrentClient
+);
 
 /**
  * @swagger
- * /api/apikey/admin/clients/{clientId}:
+ * /api/apikey/client/summary:
  *   get:
- *     summary: Get API key for a specific client (Admin only)
+ *     summary: Get API key summary for the authenticated client
  *     tags: [API Keys]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: clientId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the client
- *     description: Retrieve API key information for a specific verified client. Returns the client's API key if they have one, or null if they don't.
+ *     description: Returns statistics about the authenticated client's API keys.
  *     responses:
  *       200:
- *         description: Client and API key retrieved successfully
+ *         description: API key summary retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -568,129 +424,44 @@ router.get('/admin/clients', verifyToken, verifyRole(['admin']), getAllApiKeysWi
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "API key retrieved successfully"
+ *                   example: "API key summary retrieved successfully"
  *                 data:
  *                   type: object
  *                   properties:
- *                     _id:
- *                       type: string
- *                       description: Client ID
- *                       example: "60d21b4667d0d8992e610c85"
- *                     clientName:
- *                       type: string
- *                       description: Name of the client
- *                       example: "John Doe"
- *                     clientEmail:
- *                       type: string
- *                       description: Email of the client
- *                       example: "john@example.com"
- *                     clientCreatedAt:
+ *                     totalApiKeys:
+ *                       type: number
+ *                       description: Total number of API keys
+ *                       example: 5
+ *                     activeKeys:
+ *                       type: number
+ *                       description: Number of active (not revoked) API keys
+ *                       example: 3
+ *                     revokedKeys:
+ *                       type: number
+ *                       description: Number of revoked API keys
+ *                       example: 2
+ *                     totalUsage:
+ *                       type: number
+ *                       description: Total usage count across all API keys
+ *                       example: 42
+ *                     lastKeyCreated:
  *                       type: string
  *                       format: date-time
- *                       description: When the client was created
- *                       example: "2024-01-01T00:00:00.000Z"
- *                     hasApiKey:
- *                       type: boolean
- *                       description: Whether the client has an API key
- *                       example: true
- *                     apiKey:
- *                       oneOf:
- *                         - type: object
- *                           description: API key information if client has one
- *                           properties:
- *                             _id:
- *                               type: string
- *                               description: API key ID
- *                               example: "60d21b4667d0d8992e610c85"
- *                             key:
- *                               type: string
- *                               description: The actual API key
- *                               example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                             revoked:
- *                               type: boolean
- *                               description: Whether the API key is revoked
- *                               example: false
- *                             expiresAt:
- *                               type: string
- *                               format: date-time
- *                               description: When the API key expires
- *                               example: "2024-12-31T23:59:59.999Z"
- *                             createdAt:
- *                               type: string
- *                               format: date-time
- *                               description: When the API key was created
- *                             updatedAt:
- *                               type: string
- *                               format: date-time
- *                               description: When the API key was last updated
- *                             isExpired:
- *                               type: boolean
- *                               description: Whether the API key has expired
- *                               example: false
- *                             isActive:
- *                               type: boolean
- *                               description: Whether the API key is active (not revoked and not expired)
- *                               example: true
- *                         - type: null
- *                           description: No API key found for this client
- *       400:
- *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Validation error"
- *                 errors:
- *                   type: array
- *                   items:
- *                     type: string
- *                   example: ["Client not found or not verified"]
+ *                       nullable: true
+ *                       description: Date/time the most recent API key was created (null if none)
+ *                       example: "2024-01-20T12:34:56.000Z"
  *       401:
  *         description: Unauthorized - Invalid or missing authentication token
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Authorization token is required"
  *       403:
- *         description: Forbidden - Admin access required
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Access denied. Admin role required."
+ *         description: Forbidden - Client role required
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 message:
- *                   type: string
- *                   example: "Failed to retrieve API key"
  */
-router.get('/admin/clients/:clientId', verifyToken, verifyRole(['admin']), getApiKeyByClientIdValidation, validate, getApiKeyByClientId);
+router.get(
+  "/client/summary",
+  verifyToken,
+  verifyRole(["client"]),
+  getApiKeySummaryForCurrentClient
+);
 
 export default router;
