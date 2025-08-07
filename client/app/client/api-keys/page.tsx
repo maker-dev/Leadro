@@ -17,40 +17,31 @@ import FormModal from "@/components/modals/FormModal";
 import { GoKey } from "react-icons/go";
 import { FiKey } from "react-icons/fi";
 import { FiCopy, FiCheck, FiTrash2, FiEdit, FiPlus } from "react-icons/fi";
-
-const mockApiKeys = [
-  {
-    label: "API Key 1",
-    key: "sk-mockkey-t92j8f3k2l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0",
-    isRevoked: true,
-    usage: 814,
-    lastUsed: "Jun 27, 2025, 09:39 AM",
-    created: "Jun 9, 2025, 06:36 PM",
-    updated: "Jul 15, 2025, 03:00 PM",
-  },
-  {
-    label: "API Key 2",
-    key: "sk-mockkey-e8y0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2",
-    isRevoked: false,
-    usage: 256,
-    lastUsed: "Never",
-    created: "Jul 5, 2025, 03:04 AM",
-    updated: "Jul 15, 2025, 03:00 PM",
-  },
-  {
-    label: "API Key 3",
-    key: "sk-mockkey-ooqb1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1",
-    isRevoked: false,
-    usage: 390,
-    lastUsed: "Jul 8, 2025, 08:19 PM",
-    created: "Jul 7, 2025, 07:27 AM",
-    updated: "Jul 15, 2025, 03:00 PM",
-  },
-];
+import { toast } from "sonner";
+import {
+  getApiKeySummaryForClient,
+  getAllApiKeysForClient,
+  createApiKey,
+  deleteApiKey,
+  editApiKeyLabel,
+} from "@/services/ApiKeyService";
 
 const ApiKeysPage = () => {
   const { setLabel, setTitle } = usePageContext();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // ===================== API Key Summary State =====================
+  const [summary, setSummary] = useState<{
+    totalApiKeys: number;
+    activeKeys: number;
+    revokedKeys: number;
+    totalUsage: number;
+    lastKeyCreated: string | null;
+  } | null>(null);
+
+  // ===================== API Keys State =====================
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(true);
 
   // ===================== Delete Modal State =====================
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -69,6 +60,15 @@ const ApiKeysPage = () => {
   useEffect(() => {
     setLabel("Api Keys");
     setTitle("Api Keys");
+    // Fetch summary
+    getApiKeySummaryForClient().then((res) => {
+      if (res.success) setSummary(res.data);
+    });
+    // Fetch API keys
+    getAllApiKeysForClient().then((res) => {
+      if (res.success) setApiKeys(res.data);
+      setLoadingKeys(false);
+    });
   }, [setLabel, setTitle]);
 
   const handleCopy = (key: string) => {
@@ -88,19 +88,88 @@ const ApiKeysPage = () => {
     setKeyToDelete(null);
   };
 
-  const handleConfirmDelete = () => {
-    // For now, just log the deleted key
-    console.log("Deleted API key:", keyToDelete);
-    handleCloseDeleteModal();
+  const handleConfirmDelete = async () => {
+    if (!keyToDelete) return;
+    try {
+      const res = await deleteApiKey(keyToDelete);
+      if (res.success) {
+        toast.success("API key deleted successfully!");
+        // Refresh API keys and summary
+        getAllApiKeysForClient().then((res) => {
+          if (res.success) setApiKeys(res.data);
+        });
+        getApiKeySummaryForClient().then((res) => {
+          if (res.success) setSummary(res.data);
+        });
+      }
+      handleCloseDeleteModal();
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.message) toast.error(err.message);
+        });
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to delete API key. Please try again.");
+      }
+      handleCloseDeleteModal();
+    }
   };
 
   // ===================== Generate API Key Modal Handlers =====================
   const handleOpenCreateModal = () => setIsCreateModalOpen(true);
   const handleCloseCreateModal = () => setIsCreateModalOpen(false);
-  const handleCreateKey = (data: CreateKeyType) => {
-    // For now, just log the label
-    console.log("Create API Key with label:", data.label);
-    handleCloseCreateModal();
+  const handleCreateKey = async (
+    data: CreateKeyType,
+    {
+      setError,
+    }: {
+      setError: (
+        field: string,
+        error: { type: string; message: string }
+      ) => void;
+    }
+  ) => {
+    try {
+      const res = await createApiKey(data.label);
+      if (res.success) {
+        toast.success("API key created successfully!");
+        // Refresh API keys and summary
+        getAllApiKeysForClient().then((res) => {
+          if (res.success) setApiKeys(res.data);
+        });
+        getApiKeySummaryForClient().then((res) => {
+          if (res.success) setSummary(res.data);
+        });
+        handleCloseCreateModal();
+      }
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      let hasFieldError = false;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+            hasFieldError = true;
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create API key. Please try again.");
+      }
+      // Only close modal if there are no field errors
+      if (!hasFieldError) handleCloseCreateModal();
+      // Don't reset form on error - let user see their input and fix the error
+    }
   };
 
   // ===================== Edit API Key Modal Handlers =====================
@@ -112,10 +181,51 @@ const ApiKeysPage = () => {
     setIsEditModalOpen(false);
     setKeyToEdit(null);
   };
-  const handleEditKey = (data: EditKeyType) => {
-    // For now, just log the new label
-    console.log("Edit API Key label:", keyToEdit?.key, data.label);
-    handleCloseEditModal();
+  const handleEditKey = async (
+    data: EditKeyType,
+    {
+      setError,
+    }: {
+      setError: (
+        field: string,
+        error: { type: string; message: string }
+      ) => void;
+    }
+  ) => {
+    if (!keyToEdit) return;
+    try {
+      const res = await editApiKeyLabel(keyToEdit.key, data.label);
+      if (res.success) {
+        toast.success("API key label updated!");
+        getAllApiKeysForClient().then((res) => {
+          if (res.success) setApiKeys(res.data);
+        });
+        getApiKeySummaryForClient().then((res) => {
+          if (res.success) setSummary(res.data);
+        });
+        handleCloseEditModal();
+      }
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      let hasFieldError = false;
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+            hasFieldError = true;
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update API key label. Please try again.");
+      }
+      if (!hasFieldError) handleCloseEditModal();
+    }
   };
 
   return (
@@ -124,35 +234,43 @@ const ApiKeysPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
         <StatisticsCard
           title="Total API Keys"
-          value={10}
+          value={summary ? summary.totalApiKeys : 0}
           description="All keys for this client"
           icon={<FiKey />}
           ariaLabel="Total API Keys"
         />
         <StatisticsCard
           title="Active Keys"
-          value={7}
+          value={summary ? summary.activeKeys : 0}
           description="Currently active keys"
           icon={<FaCheckCircle />}
           ariaLabel="Active Keys"
         />
         <StatisticsCard
           title="Revoked Keys"
-          value={3}
+          value={summary ? summary.revokedKeys : 0}
           description="Keys that have been revoked"
           icon={<FaTimesCircle />}
           ariaLabel="Revoked Keys"
         />
         <StatisticsCard
           title="Total Usage"
-          value={1245}
+          value={summary ? summary.totalUsage : 0}
           description="Total API calls made"
           icon={<FaChartBar />}
           ariaLabel="Total Usage"
         />
         <StatisticsCard
           title="Last Key Created"
-          value="Jul 9, 2025"
+          value={
+            summary && summary.lastKeyCreated
+              ? new Date(summary.lastKeyCreated).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "—"
+          }
           description="Date of the most recent key"
           icon={<FaClock />}
           ariaLabel="Last Key Created"
@@ -191,72 +309,108 @@ const ApiKeysPage = () => {
                 <th className="py-2 px-2 font-semibold">Key</th>
                 <th className="py-2 px-2 font-semibold">Status</th>
                 <th className="py-2 px-2 font-semibold">Usage</th>
-                <th className="py-2 px-2 font-semibold">Last Used</th>
-                <th className="py-2 px-2 font-semibold">Created</th>
+                <th className="py-2 px-2 font-semibold min-w-[140px]">
+                  Last Used
+                </th>
+                <th className="py-2 px-2 font-semibold min-w-[140px]">
+                  Created
+                </th>
                 <th className="py-2 px-2 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {mockApiKeys.map((apiKey, idx) => (
-                <tr
-                  key={apiKey.key}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="py-3 px-2 font-medium text-gray-900">
-                    {apiKey.label}
-                  </td>
-                  <td className="py-3 px-2 flex items-center gap-2">
-                    <span>{apiKey.key.slice(0, 14)}…</span>
-                    <button
-                      className="text-gray-400 hover:text-gray-700"
-                      aria-label="Copy Key"
-                      tabIndex={0}
-                      onClick={() => handleCopy(apiKey.key)}
-                    >
-                      {copiedKey === apiKey.key ? (
-                        <FiCheck className="inline-block text-green-600" />
-                      ) : (
-                        <FiCopy className="inline-block" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="py-3 px-2">
-                    <span
-                      className={`inline-flex items-center px-4 py-1 rounded-full ${
-                        apiKey.isRevoked ? "bg-red-400" : "bg-black"
-                      } text-white text-xs font-semibold gap-2`}
-                    >
-                      {apiKey.isRevoked ? "Revoked" : "Active"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2">{apiKey.usage}</td>
-                  <td className="py-3 px-2">{apiKey.lastUsed}</td>
-                  <td className="py-3 px-2">{apiKey.created}</td>
-                  <td className="py-3 px-2 flex gap-2">
-                    <button
-                      className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2 font-semibold"
-                      tabIndex={0}
-                      aria-label="Edit Label"
-                      onClick={() =>
-                        handleOpenEditModal({
-                          key: apiKey.key,
-                          label: apiKey.label,
-                        })
-                      }
-                    >
-                      <FiEdit className="w-4 h-4" /> Edit
-                    </button>
-                    <button
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold"
-                      tabIndex={0}
-                      aria-label="Delete"
-                      onClick={() => handleOpenDeleteModal(apiKey.key)}
-                    >
-                      <FiTrash2 className="w-4 h-4" /> Delete
-                    </button>
+              {loadingKeys ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-gray-400">
+                    Loading...
                   </td>
                 </tr>
-              ))}
+              ) : apiKeys.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-gray-400">
+                    No API keys found.
+                  </td>
+                </tr>
+              ) : (
+                apiKeys.map((apiKey) => (
+                  <tr
+                    key={apiKey._id}
+                    className="border-b border-gray-100 last:border-0"
+                  >
+                    <td className="py-3 px-2 font-medium text-gray-900">
+                      {apiKey.label}
+                    </td>
+                    <td className="py-3 px-2 flex items-center gap-2">
+                      <span>{apiKey.key.slice(0, 14)}…</span>
+                      <button
+                        className="text-gray-400 hover:text-gray-700"
+                        aria-label="Copy Key"
+                        tabIndex={0}
+                        onClick={() => handleCopy(apiKey.key)}
+                      >
+                        {copiedKey === apiKey.key ? (
+                          <FiCheck className="inline-block text-green-600" />
+                        ) : (
+                          <FiCopy className="inline-block" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="py-3 px-2">
+                      <span
+                        className={`inline-flex items-center px-4 py-1 rounded-full ${
+                          apiKey.revoked ? "bg-red-400" : "bg-black"
+                        } text-white text-xs font-semibold gap-2`}
+                      >
+                        {apiKey.revoked ? "Revoked" : "Active"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2">{apiKey.usageCount}</td>
+                    <td className="py-3 px-2 min-w-[140px]">
+                      {apiKey.lastUsedAt
+                        ? new Date(apiKey.lastUsedAt).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Never"}
+                    </td>
+                    <td className="py-3 px-2 min-w-[140px]">
+                      {new Date(apiKey.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-3 px-2 flex gap-2">
+                      <button
+                        className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2 font-semibold"
+                        tabIndex={0}
+                        aria-label="Edit Label"
+                        onClick={() =>
+                          handleOpenEditModal({
+                            key: apiKey._id,
+                            label: apiKey.label,
+                          })
+                        }
+                      >
+                        <FiEdit className="w-4 h-4" /> Edit
+                      </button>
+                      <button
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 font-semibold"
+                        tabIndex={0}
+                        aria-label="Delete"
+                        onClick={() => handleOpenDeleteModal(apiKey._id)}
+                      >
+                        <FiTrash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

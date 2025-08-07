@@ -465,14 +465,31 @@ function AccessManagementPage() {
               </div>
             </div>
           ) : (
-            <table className="min-w-full text-left">
+            <table className="min-w-[700px] table-fixed w-full text-left">
+              <colgroup>
+                <col className="min-w-[120px] md:w-2/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+              </colgroup>
               <thead>
                 <tr className="text-gray-500 text-sm border-b border-gray-300">
-                  <th className="py-2 px-2 font-semibold">Client Email</th>
-                  <th className="py-2 px-2 font-semibold">Permissions</th>
-                  <th className="py-2 px-2 font-semibold">Status</th>
-                  <th className="py-2 px-2 font-semibold">Invited Date</th>
-                  <th className="py-2 px-2 font-semibold">Actions</th>
+                  <th className="py-2 px-2 font-semibold min-w-[120px] md:w-2/6">
+                    Client
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Permissions
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Status
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Invited Date
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -588,15 +605,31 @@ function AccessManagementPage() {
               </div>
             </div>
           ) : (
-            <table className="min-w-full text-left">
+            <table className="min-w-[700px] table-fixed w-full text-left">
+              <colgroup>
+                <col className="min-w-[120px] md:w-2/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+                <col className="min-w-[100px] md:w-1/6" />
+              </colgroup>
               <thead>
                 <tr className="text-gray-500 text-sm border-b border-gray-300">
-                  <th className="py-2 px-2 font-semibold">Client Name</th>
-                  <th className="py-2 px-2 font-semibold">Email</th>
-                  <th className="py-2 px-2 font-semibold">Permissions</th>
-                  <th className="py-2 px-2 font-semibold">Status</th>
-                  <th className="py-2 px-2 font-semibold">Date</th>
-                  <th className="py-2 px-2 font-semibold">Actions</th>
+                  <th className="py-2 px-2 font-semibold min-w-[120px] md:w-2/6">
+                    Client
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Permissions
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Status
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Shared Date
+                  </th>
+                  <th className="py-2 px-2 font-semibold min-w-[100px] md:w-1/6">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -606,9 +639,13 @@ function AccessManagementPage() {
                     className="border-b border-gray-100 last:border-0"
                   >
                     <td className="py-3 px-2 font-medium text-gray-900">
-                      {client.owner?.name}
+                      <div className="flex flex-col">
+                        <span>{client.owner?.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {client.owner?.email}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-3 px-2">{client.owner?.email}</td>
                     <td className="py-3 px-2">
                       <div className="flex gap-2">
                         {client.permissions.includes("read") && (
@@ -652,10 +689,10 @@ function AccessManagementPage() {
                         {client.status === "active" ? (
                           <Link
                             href="/client/leads"
-                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-gray-200 text-gray-900 font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-black/60 transition-colors w-full md:w-auto text-sm md:text-base justify-center whitespace-nowrap min-w-[120px]"
                             aria-label="View Leads"
                           >
-                            <FiDatabase className="w-5 h-5" />
+                            <FiDatabase className="w-5 h-5 flex-shrink-0" />
                             View Leads
                           </Link>
                         ) : (

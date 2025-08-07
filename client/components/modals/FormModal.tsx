@@ -16,7 +16,15 @@ export type FieldConfig = {
 type FormModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (
+    data: any,
+    helpers: {
+      setError: (
+        field: string,
+        error: { type: string; message: string }
+      ) => void;
+    }
+  ) => void;
   title: string;
   fields: FieldConfig[];
   initialValues: Record<string, any>;
@@ -43,6 +51,7 @@ const FormModal = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    setError,
   } = useForm<any>({
     resolver: zodResolver(validationSchema),
     defaultValues: initialValues,
@@ -84,8 +93,8 @@ const FormModal = ({
   if (!isOpen) return null;
 
   const handleFormSubmit = (data: any) => {
-    onSubmit(data);
-    reset();
+    onSubmit(data, { setError });
+    // Remove automatic reset - let parent control when to reset
   };
 
   // Helper to convert error to FieldError type
