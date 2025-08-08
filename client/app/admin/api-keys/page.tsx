@@ -5,46 +5,12 @@ import { FiFilter } from "react-icons/fi";
 import BaseTable, { BaseTableColumn } from "@/components/ui/tables/BaseTable";
 import Link from "next/link";
 import { usePageContext } from "@/context/PageTitleContext";
-
-// Mock data for API keys
-const fakeApiKeys = [
-  {
-    id: 1,
-    clientName: "Acme Corp",
-    email: "admin@acme.com",
-    totalApiKeys: 5,
-    activeKeys: 3,
-    revokedKeys: 2,
-    totalUsageCount: 1200,
-  },
-  {
-    id: 2,
-    clientName: "Beta LLC",
-    email: "contact@beta.com",
-    totalApiKeys: 2,
-    activeKeys: 2,
-    revokedKeys: 0,
-    totalUsageCount: 450,
-  },
-  {
-    id: 3,
-    clientName: "Gamma Inc",
-    email: "info@gamma.com",
-    totalApiKeys: 4,
-    activeKeys: 1,
-    revokedKeys: 3,
-    totalUsageCount: 300,
-  },
-  {
-    id: 4,
-    clientName: "Delta Ltd",
-    email: "support@delta.com",
-    totalApiKeys: 3,
-    activeKeys: 3,
-    revokedKeys: 0,
-    totalUsageCount: 980,
-  },
-];
+import {
+  getAllClientsApiKeyStats,
+  ClientApiKeyStats,
+  GetAllClientsApiKeyStatsParams,
+} from "@/services/ApiKeyService";
+import { toast } from "sonner";
 
 const rowsPerPageOptions = [8, 16, 32];
 
@@ -71,7 +37,19 @@ const ApiKeysPage = () => {
     setTitle("Api Keys");
   }, [setLabel, setTitle]);
 
-  // Filter state (no filtering logic, just state)
+  // API data state
+  const [apiKeyStats, setApiKeyStats] = useState<ClientApiKeyStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 8,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [usageCountMin, setUsageCountMin] = useState("");
@@ -79,39 +57,92 @@ const ApiKeysPage = () => {
   const [totalKeysMin, setTotalKeysMin] = useState("");
   const [totalKeysMax, setTotalKeysMax] = useState("");
 
+  // Applied filters state (what's actually being used for API calls)
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "all" as "all" | "active" | "revoked",
+    totalusagecount_min: undefined as number | undefined,
+    totalusagecount_max: undefined as number | undefined,
+    totalkeysnumber_min: undefined as number | undefined,
+    totalkeysnumber_max: undefined as number | undefined,
+  });
+
   // Pagination state
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
-  const totalRows = fakeApiKeys.length;
 
-  // Handlers (no filtering logic)
-  const handleSearch = () => {
-    setPage(1);
+  // Load API key stats on component mount and when pagination or applied filters change
+  useEffect(() => {
+    loadApiKeyStats();
+  }, [page, rowsPerPage, appliedFilters]);
+
+  const loadApiKeyStats = async () => {
+    try {
+      setLoading(true);
+      const params: GetAllClientsApiKeyStatsParams = {
+        page,
+        limit: rowsPerPage,
+        search: appliedFilters.search || undefined,
+        status:
+          appliedFilters.status !== "all" ? appliedFilters.status : undefined,
+        totalusagecount_min: appliedFilters.totalusagecount_min,
+        totalusagecount_max: appliedFilters.totalusagecount_max,
+        totalkeysnumber_min: appliedFilters.totalkeysnumber_min,
+        totalkeysnumber_max: appliedFilters.totalkeysnumber_max,
+      };
+
+      const response = await getAllClientsApiKeyStats(params);
+      setApiKeyStats(response.data);
+      setPagination(response.pagination);
+    } catch (error: any) {
+      toast.error("Failed to load API key statistics");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter handlers
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: searchTerm,
+      status: statusFilter as "all" | "active" | "revoked",
+      totalusagecount_min: usageCountMin ? parseInt(usageCountMin) : undefined,
+      totalusagecount_max: usageCountMax ? parseInt(usageCountMax) : undefined,
+      totalkeysnumber_min: totalKeysMin ? parseInt(totalKeysMin) : undefined,
+      totalkeysnumber_max: totalKeysMax ? parseInt(totalKeysMax) : undefined,
+    });
+    setPage(1); // Reset to first page when applying filters
   };
 
   const handleSearchInputKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
     if (e.key === "Enter") {
-      handleSearch();
+      handleApplyFilters();
     }
   };
 
   const handleClearFilters = () => {
+    // Reset all filter inputs to default
     setSearchTerm("");
     setStatusFilter("all");
     setUsageCountMin("");
     setUsageCountMax("");
     setTotalKeysMin("");
     setTotalKeysMax("");
+
+    // Reset applied filters to default
+    setAppliedFilters({
+      search: "",
+      status: "all",
+      totalusagecount_min: undefined,
+      totalusagecount_max: undefined,
+      totalkeysnumber_min: undefined,
+      totalkeysnumber_max: undefined,
+    });
+
     setPage(1);
   };
-
-  // Pagination logic (on full data)
-  const paginatedData = fakeApiKeys.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage
-  );
 
   return (
     <div className="w-full space-y-6">
@@ -240,7 +271,8 @@ const ApiKeysPage = () => {
         <hr className="my-6 border-gray-200" />
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <span className="text-gray-500 text-sm">
-            Showing {paginatedData.length} of {fakeApiKeys.length} API keys
+            Showing {apiKeyStats.length} of {pagination.totalItems} API key
+            statistics
           </span>
           <div className="flex gap-2 w-full md:w-auto justify-end">
             <button
@@ -255,7 +287,7 @@ const ApiKeysPage = () => {
               className="px-4 py-2 rounded-md bg-black text-white text-sm font-medium hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition"
               tabIndex={0}
               aria-label="Apply filters"
-              onClick={handleSearch}
+              onClick={handleApplyFilters}
             >
               Apply Filters
             </button>
@@ -266,19 +298,32 @@ const ApiKeysPage = () => {
       <div className="w-full bg-white rounded-2xl shadow-lg p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full mb-6 gap-3">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-            Client’s API Keys
+            Client's API Keys
           </h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-gray-700 font-medium">
+                  Loading API key statistics...
+                </span>
+              </div>
+            </div>
+          )}
           <BaseTable
             columns={columns}
-            data={paginatedData}
-            rowKey={(row) => row.id}
+            data={apiKeyStats}
+            rowKey={(row) => row.clientId}
             renderCell={(row, colKey) => {
               if (colKey === "actions") {
                 return (
                   <div className="flex justify-end gap-2">
-                    <Link href={`/admin/api-keys/view/${row.id}`} passHref>
+                    <Link
+                      href={`/admin/api-keys/view/${row.clientId}`}
+                      passHref
+                    >
                       <button
                         tabIndex={0}
                         aria-label={`View API keys for ${row.email}`}
@@ -299,7 +344,7 @@ const ApiKeysPage = () => {
             }}
             page={page}
             rowsPerPage={rowsPerPage}
-            totalRows={fakeApiKeys.length}
+            totalRows={pagination.totalItems}
             onPageChange={setPage}
             onRowsPerPageChange={setRowsPerPage}
             rowsPerPageOptions={rowsPerPageOptions}

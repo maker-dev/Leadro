@@ -6,8 +6,8 @@ const generateApiKeyValidation = [
     .trim()
     .notEmpty()
     .withMessage("Label is required")
-    .isLength({ min: 3, max: 100 })
-    .withMessage("Label must be between 3 and 100 characters")
+    .isLength({ min: 3, max: 20 })
+    .withMessage("Label must be between 3 and 20 characters")
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage(
       "Label can only contain letters, numbers, spaces, hyphens, and underscores"
@@ -70,8 +70,8 @@ const updateApiKeyLabelValidation = [
     .trim()
     .notEmpty()
     .withMessage("Label is required")
-    .isLength({ min: 3, max: 100 })
-    .withMessage("Label must be between 3 and 100 characters")
+    .isLength({ min: 3, max: 20 })
+    .withMessage("Label must be between 3 and 20 characters")
     .matches(/^[a-zA-Z0-9\s\-_]+$/)
     .withMessage(
       "Label can only contain letters, numbers, spaces, hyphens, and underscores"

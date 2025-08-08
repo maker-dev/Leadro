@@ -8,11 +8,18 @@ import {
   FaTimesCircle,
   FaChartBar,
   FaClock,
+  FaCalculator,
+  FaFire,
+  FaCrown,
 } from "react-icons/fa";
 import { GoKey } from "react-icons/go";
 import { FiKey } from "react-icons/fi";
 import { FiCopy, FiCheck, FiRotateCw, FiTrash2, FiSlash } from "react-icons/fi";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
+import { getAdminApiKeySummary } from "@/services/ApiKeyService";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
+import formatDate from "@/utils/formateDate";
 
 const mockApiKeys = [
   {
@@ -49,9 +56,16 @@ const mockApiKeys = [
 
 const ViewKeysPage = () => {
   const { setLabel, setTitle } = usePageContext();
+  const params = useParams();
+  const clientId = params.id as string;
+
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
+
+  // API data state
+  const [apiKeySummary, setApiKeySummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleConfirmDelete = () => {
     if (deletingClientId !== null) {
@@ -67,10 +81,36 @@ const ViewKeysPage = () => {
     setTitle("Manage Api Keys");
   }, [setLabel, setTitle]);
 
+  // Load API key summary data
+  useEffect(() => {
+    const loadApiKeySummary = async () => {
+      try {
+        setLoading(true);
+        const response = await getAdminApiKeySummary(clientId);
+        setApiKeySummary(response.data);
+      } catch (error: any) {
+        toast.error("Failed to load API key summary");
+        console.error("Error loading API key summary:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (clientId) {
+      loadApiKeySummary();
+    }
+  }, [clientId]);
+
   const handleCopy = (key: string) => {
     navigator.clipboard.writeText(key);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1200);
+  };
+
+  // Format last key created date
+  const formatLastKeyCreated = (dateString: string | null) => {
+    if (!dateString) return "No keys created";
+    return formatDate(dateString);
   };
 
   return (
@@ -79,38 +119,69 @@ const ViewKeysPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
         <StatisticsCard
           title="Total API Keys"
-          value={10}
+          value={loading ? "..." : apiKeySummary?.totalApiKeys || 0}
           description="All keys for this client"
           icon={<FiKey />}
           ariaLabel="Total API Keys"
         />
         <StatisticsCard
           title="Active Keys"
-          value={7}
+          value={loading ? "..." : apiKeySummary?.activeKeys || 0}
           description="Currently active keys"
           icon={<FaCheckCircle />}
           ariaLabel="Active Keys"
         />
         <StatisticsCard
           title="Revoked Keys"
-          value={3}
+          value={loading ? "..." : apiKeySummary?.revokedKeys || 0}
           description="Keys that have been revoked"
           icon={<FaTimesCircle />}
           ariaLabel="Revoked Keys"
         />
         <StatisticsCard
           title="Total Usage"
-          value={1245}
+          value={loading ? "..." : apiKeySummary?.totalUsage || 0}
           description="Total API calls made"
           icon={<FaChartBar />}
           ariaLabel="Total Usage"
         />
         <StatisticsCard
           title="Last Key Created"
-          value="Jul 9, 2025"
+          value={
+            loading
+              ? "..."
+              : formatLastKeyCreated(apiKeySummary?.lastKeyCreated)
+          }
           description="Date of the most recent key"
           icon={<FaClock />}
           ariaLabel="Last Key Created"
+        />
+        <StatisticsCard
+          title="Average Usage"
+          value={loading ? "..." : apiKeySummary?.averageUsagePerKey || 0}
+          description="Average calls per key"
+          icon={<FaCalculator />}
+          ariaLabel="Average Usage"
+        />
+        <StatisticsCard
+          title="Last Key Used"
+          value={
+            loading
+              ? "..."
+              : apiKeySummary?.lastKeyUsed
+              ? formatDate(apiKeySummary.lastKeyUsed)
+              : "Never used"
+          }
+          description="Most recent API call"
+          icon={<FaFire />}
+          ariaLabel="Last Key Used"
+        />
+        <StatisticsCard
+          title="Top Used Key"
+          value={loading ? "..." : apiKeySummary?.topUsedKey || "No usage"}
+          description="Most active API key"
+          icon={<FaCrown />}
+          ariaLabel="Top Used Key"
         />
       </div>
       {/* Managing api keys Card */}
@@ -130,8 +201,12 @@ const ViewKeysPage = () => {
                 <th className="py-2 px-2 font-semibold">Key</th>
                 <th className="py-2 px-2 font-semibold">Status</th>
                 <th className="py-2 px-2 font-semibold">Usage</th>
-                <th className="py-2 px-2 font-semibold">Last Used</th>
-                <th className="py-2 px-2 font-semibold">Created</th>
+                <th className="py-2 px-2 font-semibold min-w-[140px]">
+                  Last Used
+                </th>
+                <th className="py-2 px-2 font-semibold min-w-[140px]">
+                  Created
+                </th>
                 <th className="py-2 px-2 font-semibold">Actions</th>
               </tr>
             </thead>

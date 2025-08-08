@@ -9,6 +9,7 @@ import {
   getAllApiKeysForCurrentClient,
   getApiKeySummaryForCurrentClient,
   getAllClientsApiKeyStats,
+  getApiKeySummaryForAdmin,
 } from "../controllers/apikey.controller.js";
 import {
   generateApiKeyValidation,
@@ -635,6 +636,89 @@ router.get(
   getAllClientsApiKeyStatsValidation,
   validate,
   getAllClientsApiKeyStats
+);
+
+/**
+ * @swagger
+ * /api/apikey/admin/summary/{clientId}:
+ *   get:
+ *     summary: Get API key summary statistics for a specific client (Admin only)
+ *     tags: [API Keys]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieve summary statistics about API keys for a specific client. This endpoint is restricted to admin users only.
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the client to get API key summary for
+ *         example: "507f1f77bcf86cd799439011"
+ *     responses:
+ *       200:
+ *         description: API key summary statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "API key summary retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalApiKeys:
+ *                       type: integer
+ *                       description: Total number of API keys for the specific client
+ *                       example: 5
+ *                     activeKeys:
+ *                       type: integer
+ *                       description: Number of active (not revoked) API keys
+ *                       example: 120
+ *                     revokedKeys:
+ *                       type: integer
+ *                       description: Number of revoked API keys
+ *                       example: 30
+ *                     totalUsage:
+ *                       type: integer
+ *                       description: Total usage count for the specific client's API keys
+ *                       example: 1250
+ *                     lastKeyCreated:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Most recent API key creation date
+ *                       example: "2024-01-15T10:30:00.000Z"
+ *                     lastKeyUsed:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Most recent API key usage date
+ *                       example: "2024-01-15T09:45:00.000Z"
+ *                     averageUsagePerKey:
+ *                       type: integer
+ *                       description: Average usage count per API key
+ *                       example: 167
+ *                     topUsedKey:
+ *                       type: string
+ *                       nullable: true
+ *                       description: Label of the top 1 most used API key for the specific client (null if no keys exist)
+ *                       example: "Production Key"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication token
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/admin/summary/:clientId",
+  verifyToken,
+  verifyRole(["admin"]),
+  getApiKeySummaryForAdmin
 );
 
 export default router;

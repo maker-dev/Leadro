@@ -201,6 +201,7 @@ const getAllClientsApiKeyStats = async (req, res) => {
       { $unwind: "$client" },
       {
         $project: {
+          clientId: "$_id",
           clientName: "$client.name",
           email: "$client.email",
           totalApiKeys: 1,
@@ -272,6 +273,83 @@ const getAllClientsApiKeyStats = async (req, res) => {
   }
 };
 
+// ===================== ADMIN: Get API key summary for admin =====================
+const getApiKeySummaryForAdmin = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    // Validate clientId parameter
+    if (!clientId) {
+      return res.status(400).json({
+        success: false,
+        message: "Client ID is required",
+      });
+    }
+
+    // Get all API keys for the specific client
+    const clientApiKeys = await ApiKey.find({ clientId });
+
+    // Calculate statistics for the specific client
+    const totalApiKeys = clientApiKeys.length;
+    const activeKeys = clientApiKeys.filter((k) => !k.revoked).length;
+    const revokedKeys = clientApiKeys.filter((k) => k.revoked).length;
+    const totalUsage = clientApiKeys.reduce(
+      (sum, k) => sum + (k.usageCount || 0),
+      0
+    );
+
+    // Get the most recent API key creation date
+    const lastKeyCreated =
+      clientApiKeys.length > 0
+        ? clientApiKeys.reduce((latest, k) => {
+            return !latest || k.createdAt > latest ? k.createdAt : latest;
+          }, null)
+        : null;
+
+    // Get the most recent API key usage date
+    const lastKeyUsed =
+      clientApiKeys.length > 0
+        ? clientApiKeys.reduce((latest, k) => {
+            if (!k.lastUsedAt) return latest;
+            return !latest || k.lastUsedAt > latest ? k.lastUsedAt : latest;
+          }, null)
+        : null;
+
+    // Calculate average usage per key
+    const averageUsagePerKey =
+      totalApiKeys > 0 ? Math.round(totalUsage / totalApiKeys) : 0;
+
+    // Get top 1 most used API key label for this client (only if usage > 0)
+    const topUsedKey =
+      clientApiKeys
+        .filter((key) => (key.usageCount || 0) > 0) // Filter out keys with 0 usage
+        .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+        .slice(0, 1)
+        .map((key) => key.label)[0] || null;
+
+    res.status(200).json({
+      success: true,
+      message: "API key summary retrieved successfully",
+      data: {
+        totalApiKeys,
+        activeKeys,
+        revokedKeys,
+        totalUsage,
+        lastKeyCreated,
+        lastKeyUsed,
+        averageUsagePerKey,
+        topUsedKey,
+      },
+    });
+  } catch (error) {
+    console.error("Get API key summary for admin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve API key summary",
+    });
+  }
+};
+
 export {
   generateApiKey,
   updateApiKeyLabel,
@@ -279,4 +357,5 @@ export {
   getAllApiKeysForCurrentClient,
   getApiKeySummaryForCurrentClient,
   getAllClientsApiKeyStats,
+  getApiKeySummaryForAdmin,
 };
