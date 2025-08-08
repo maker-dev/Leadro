@@ -305,7 +305,7 @@ const ApiKeysPage = () => {
           >
             <thead>
               <tr className="text-gray-500 text-sm border-b border-gray-300">
-                <th className="py-2 px-2 font-semibold">Label</th>
+                <th className="py-2 px-2 font-semibold min-w-[140px]">Label</th>
                 <th className="py-2 px-2 font-semibold">Key</th>
                 <th className="py-2 px-2 font-semibold">Status</th>
                 <th className="py-2 px-2 font-semibold">Usage</th>
