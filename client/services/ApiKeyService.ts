@@ -55,6 +55,64 @@ export type GetAllClientsApiKeyStatsParams = {
   totalkeysnumber_max?: number;
 };
 
+// New types for admin API key management
+export type AdminApiKeySummary = {
+  totalApiKeys: number;
+  activeKeys: number;
+  revokedKeys: number;
+  totalUsage: number;
+  lastKeyCreated: string | null;
+  lastKeyUsed: string | null;
+  averageUsagePerKey: number;
+  topUsedKey: string | null;
+};
+
+export type AdminApiKey = {
+  _id: string;
+  clientId: string;
+  label: string;
+  key: string;
+  revoked: boolean;
+  usageCount: number;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GetAllApiKeysForClientByAdminResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    clientId: string;
+    totalKeys: number;
+    apiKeys: AdminApiKey[];
+  };
+};
+
+export type DeleteApiKeyByAdminResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    deletedApiKey: {
+      _id: string;
+      clientId: string;
+      label: string;
+      revoked: boolean;
+      usageCount: number;
+      lastUsedAt: string | null;
+      createdAt: string;
+    };
+  };
+};
+
+export type UpdateApiKeyRevokedStatusByAdminResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    updatedApiKey: AdminApiKey;
+  };
+};
+
 // Create a new API key
 export async function createApiKey(label: string) {
   const res = await axios.post("/apikey/generate-key", { label });
@@ -99,5 +157,34 @@ export async function getAllClientsApiKeyStats(
 // Get API key summary for admin (admin only)
 export async function getAdminApiKeySummary(clientId: string) {
   const res = await axios.get(`/apikey/admin/summary/${clientId}`);
+  return res.data;
+}
+
+// Get all API keys for a specific client (admin only)
+export async function getAllApiKeysForClientByAdmin(clientId: string) {
+  const res = await axios.get<GetAllApiKeysForClientByAdminResponse>(
+    `/apikey/admin/keys/${clientId}`
+  );
+  return res.data;
+}
+
+// Delete a specific API key for a client (admin only)
+export async function deleteApiKeyByAdmin(clientId: string, apiKeyId: string) {
+  const res = await axios.delete<DeleteApiKeyByAdminResponse>(
+    `/apikey/admin/${clientId}/keys/${apiKeyId}`
+  );
+  return res.data;
+}
+
+// Update API key revoked status for a client (admin only)
+export async function updateApiKeyRevokedStatusByAdmin(
+  clientId: string,
+  apiKeyId: string,
+  revoked: boolean
+) {
+  const res = await axios.patch<UpdateApiKeyRevokedStatusByAdminResponse>(
+    `/apikey/admin/${clientId}/keys/${apiKeyId}/revoked-status`,
+    { revoked }
+  );
   return res.data;
 }
