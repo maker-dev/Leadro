@@ -262,9 +262,12 @@ const getLeadById = async (req, res) => {
       });
     }
 
+    const leadObj = lead.toObject();
+    leadObj.extraFields = Object.fromEntries(leadObj.extraFields); // Convert Map to plain object
+
     // Add permissions to the lead data
     const leadWithPermissions = {
-      ...lead.toObject(),
+      ...leadObj,
       permissions: permissions,
     };
 
