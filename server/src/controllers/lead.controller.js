@@ -710,15 +710,17 @@ const deleteAdminLead = async (req, res) => {
 // Create lead via public API
 const createLeadFromWebhook = async (req, res) => {
   try {
-    const { name, email, phone, source, message, ...extraFields } = req.body;
+    const { name, email, phone, source, message, status, ...extraFields } =
+      req.body;
 
     const lead = await Lead.create({
       ownerId: req.apiKey.clientId, // Use the client ID from the API key
       name,
       email,
       phone,
-      source, // Default source to 'API' if not provided
+      source,
       message,
+      status: status || "new", // Default to "new" if not provided
       extraFields: new Map(Object.entries(extraFields)), // Convert extra fields to Map
     });
 
