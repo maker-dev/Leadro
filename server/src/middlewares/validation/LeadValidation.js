@@ -1,7 +1,6 @@
 import { body, param, query } from "express-validator";
 import Lead from "../../models/Lead.js";
-import ClientAccess from "../../models/ClientAccess.js";
-
+import LeadSourceValues from "../../data/LeadSourceOptions.js";
 /* CLIENT API */
 
 const CreateLeadValidation = [
@@ -34,8 +33,8 @@ const CreateLeadValidation = [
   body("source")
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage("Source must be between 2 and 50 characters"),
+    .isIn(LeadSourceValues)
+    .withMessage("Source is invalid"),
 
   body("status")
     .trim()
