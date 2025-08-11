@@ -195,9 +195,44 @@ const getAllClientsApiKeyStatsValidation = [
   }),
 ];
 
+const deleteApiKeyByAdminValidation = [
+  param("clientId")
+    .trim()
+    .notEmpty()
+    .withMessage("Client ID is required")
+    .isMongoId()
+    .withMessage("Invalid client ID format"),
+  param("apiKeyId")
+    .trim()
+    .notEmpty()
+    .withMessage("API Key ID is required")
+    .isMongoId()
+    .withMessage("Invalid API key ID format"),
+];
+
+const updateApiKeyRevokedStatusByAdminValidation = [
+  param("clientId")
+    .trim()
+    .notEmpty()
+    .withMessage("Client ID is required")
+    .isMongoId()
+    .withMessage("Invalid client ID format"),
+  param("apiKeyId")
+    .trim()
+    .notEmpty()
+    .withMessage("API Key ID is required")
+    .isMongoId()
+    .withMessage("Invalid API key ID format"),
+  body("revoked")
+    .isBoolean()
+    .withMessage("Revoked status must be a boolean value (true/false)"),
+];
+
 export {
   generateApiKeyValidation,
   updateApiKeyLabelValidation,
   deleteApiKeyValidation,
   getAllClientsApiKeyStatsValidation,
+  deleteApiKeyByAdminValidation,
+  updateApiKeyRevokedStatusByAdminValidation,
 };

@@ -350,6 +350,149 @@ const getApiKeySummaryForAdmin = async (req, res) => {
   }
 };
 
+// ===================== ADMIN: Get all API keys for a specific client =====================
+const getAllApiKeysForClientByAdmin = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    // Validate clientId parameter
+    if (!clientId) {
+      return res.status(400).json({
+        success: false,
+        message: "Client ID is required",
+      });
+    }
+
+    // Get all API keys for the specific client with detailed information
+    const clientApiKeys = await ApiKey.find({ clientId }).sort({
+      createdAt: -1,
+    });
+
+    // Map the API keys to include all necessary information
+    const mappedApiKeys = clientApiKeys.map((apiKey) => ({
+      _id: apiKey._id,
+      clientId: apiKey.clientId,
+      label: apiKey.label,
+      key: apiKey.key,
+      revoked: apiKey.revoked,
+      usageCount: apiKey.usageCount || 0,
+      lastUsedAt: apiKey.lastUsedAt,
+      createdAt: apiKey.createdAt,
+      updatedAt: apiKey.updatedAt,
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: "API keys retrieved successfully",
+      data: {
+        clientId,
+        totalKeys: mappedApiKeys.length,
+        apiKeys: mappedApiKeys,
+      },
+    });
+  } catch (error) {
+    console.error("Get all API keys for client by admin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve API keys for client",
+    });
+  }
+};
+
+// ===================== ADMIN: Delete API key for a specific client =====================
+const deleteApiKeyByAdmin = async (req, res) => {
+  try {
+    const { clientId, apiKeyId } = req.params;
+
+    // Find the API key and ensure it belongs to the specified client
+    const apiKey = await ApiKey.findOne({
+      _id: apiKeyId,
+      clientId: clientId,
+    });
+
+    if (!apiKey) {
+      return res.status(404).json({
+        success: false,
+        message: "API key not found or does not belong to the specified client",
+      });
+    }
+
+    // Delete the API key
+    await apiKey.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "API key deleted successfully",
+      data: {
+        deletedApiKey: {
+          _id: apiKey._id,
+          clientId: apiKey.clientId,
+          label: apiKey.label,
+          revoked: apiKey.revoked,
+          usageCount: apiKey.usageCount || 0,
+          lastUsedAt: apiKey.lastUsedAt,
+          createdAt: apiKey.createdAt,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Delete API key by admin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete API key",
+    });
+  }
+};
+
+// ===================== ADMIN: Update API key revoked status for a specific client =====================
+const updateApiKeyRevokedStatusByAdmin = async (req, res) => {
+  try {
+    const { clientId, apiKeyId } = req.params;
+    const { revoked } = req.body;
+
+    // Find the API key and ensure it belongs to the specified client
+    const apiKey = await ApiKey.findOne({
+      _id: apiKeyId,
+      clientId: clientId,
+    });
+
+    if (!apiKey) {
+      return res.status(404).json({
+        success: false,
+        message: "API key not found or does not belong to the specified client",
+      });
+    }
+
+    // Update the revoked status
+    apiKey.revoked = revoked;
+    await apiKey.save();
+
+    res.status(200).json({
+      success: true,
+      message: `API key ${revoked ? "revoked" : "activated"} successfully`,
+      data: {
+        updatedApiKey: {
+          _id: apiKey._id,
+          clientId: apiKey.clientId,
+          label: apiKey.label,
+          key: apiKey.key,
+          revoked: apiKey.revoked,
+          usageCount: apiKey.usageCount || 0,
+          lastUsedAt: apiKey.lastUsedAt,
+          createdAt: apiKey.createdAt,
+          updatedAt: apiKey.updatedAt,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Update API key revoked status by admin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update API key revoked status",
+    });
+  }
+};
+
 export {
   generateApiKey,
   updateApiKeyLabel,
@@ -358,4 +501,7 @@ export {
   getApiKeySummaryForCurrentClient,
   getAllClientsApiKeyStats,
   getApiKeySummaryForAdmin,
+  getAllApiKeysForClientByAdmin,
+  deleteApiKeyByAdmin,
+  updateApiKeyRevokedStatusByAdmin,
 };
