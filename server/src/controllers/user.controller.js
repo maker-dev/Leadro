@@ -141,6 +141,147 @@ const getAllClients = async (req, res) => {
   }
 };
 
+const getAllClientsWithPagination = async (req, res) => {
+  try {
+    const { page = 1, limit = 8, search } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query = { role: "client" };
+
+    // If search is provided, search by name or email
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } }, // i = case-insensitive
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Get total count
+    const totalItems = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limitNum);
+
+    // Fetch clients with pagination
+    const clients = await User.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        clients,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems,
+          itemsPerPage: limitNum,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get all clients error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const updateAdminClientProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, email } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (name) user.name = name;
+    if (email && email.toLowerCase() !== user.email) {
+      user.email = email.toLowerCase();
+      user.isEmailVerified = false;
+
+      // Generate email verification token
+      const emailVerificationToken = jwt.sign(
+        { userId: user._id },
+        process.env.EMAIL_SECRET,
+        { expiresIn: "20h" }
+      );
+
+      const emailVerificationUrl = `${process.env.BACKEND_URL}/api/users/client/verify-email?token=${emailVerificationToken}`;
+
+      //send email verification email
+      await sendEmail({
+        to: email,
+        subject: "Email Verification",
+        html: `Click <a href="${emailVerificationUrl}">here</a> to verify your new email`,
+      });
+    }
+
+    await user.save();
+
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: userResponse,
+    });
+  } catch (error) {
+    console.error("Update client profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const deleteClientByAdmin = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists and is a client
+    const user = await User.findById(userId);
+    if (!user || user.role !== "client") {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    // Delete all API keys belonging to the client
+    await ApiKey.deleteMany({ clientId: userId });
+
+    // Delete all ClientAccess where user is owner or sharedWith
+    await ClientAccess.deleteMany({
+      $or: [{ ownerId: userId }, { sharedWithId: userId }],
+    });
+
+    // Delete all Leads owned by the client
+    await Lead.deleteMany({ ownerId: userId });
+
+    // Delete the client user
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Client account and all related data deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete client by admin error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 //Hybrid APIS
 
 const login = async (req, res) => {
@@ -345,6 +486,9 @@ export {
   refreshToken,
   getProfile,
   getAllClients,
+  getAllClientsWithPagination,
+  updateAdminClientProfile,
+  deleteClientByAdmin,
   clientVerifyEmail,
   resendVerificationEmail,
   logout,

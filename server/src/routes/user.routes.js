@@ -13,6 +13,9 @@ import {
   logout,
   changeName,
   deleteAccount,
+  getAllClientsWithPagination,
+  updateAdminClientProfile,
+  deleteClientByAdmin,
 } from "../controllers/user.controller.js";
 import {
   ClientRegisterValidation,
@@ -20,6 +23,8 @@ import {
   ResendVerificationEmailValidation,
   LoginValidation,
   ChangeNameValidation,
+  GetAllClientsWithPaginationValidation,
+  UpdateAdminClientProfileValidation,
 } from "../middlewares/validation/UserValidation.js";
 
 const router = express.Router();
@@ -548,6 +553,260 @@ router.get("/profile", verifyToken, ProfileValidation, validate, getProfile);
  *         description: Server error
  */
 router.get("/admin/clients", verifyToken, verifyRole(["admin"]), getAllClients);
+
+/**
+ * @swagger
+ * /api/users/admin/clients/pagination:
+ *   get:
+ *     summary: Get all clients with pagination (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Page number for pagination (default is 1)
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of items per page (default is 8)
+ *         example: 8
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter clients by name or email
+ *         example: john
+ *     responses:
+ *       200:
+ *         description: Clients retrieved successfully with pagination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     clients:
+ *                       type: array
+ *                       description: List of clients
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             description: Client ID
+ *                             example: "60d21b4667d0d8992e610c85"
+ *                           name:
+ *                             type: string
+ *                             description: Full name of the client
+ *                             example: "Jane Smith"
+ *                           email:
+ *                             type: string
+ *                             description: Email address of the client
+ *                             example: "jane@example.com"
+ *                           role:
+ *                             type: string
+ *                             description: User role
+ *                             example: "client"
+ *                           isEmailVerified:
+ *                             type: boolean
+ *                             description: Whether the email has been verified
+ *                             example: false
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             description: Account creation date
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                             description: Last account update date
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 5
+ *                         totalItems:
+ *                           type: integer
+ *                           example: 40
+ *                         itemsPerPage:
+ *                           type: integer
+ *                           example: 8
+ *                         hasNextPage:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPrevPage:
+ *                           type: boolean
+ *                           example: false
+ *       400:
+ *         description: Invalid query parameters
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/admin/clients/pagination",
+  verifyToken,
+  verifyRole(["admin"]),
+  GetAllClientsWithPaginationValidation,
+  validate,
+  getAllClientsWithPagination
+);
+
+/**
+ * @swagger
+ * /api/admin/clients/{userId}:
+ *   put:
+ *     summary: Update a client's profile (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: ObjectId
+ *         description: The ID of the client to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Full name of the client
+ *                 example: "Jane Doe"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Client's email address
+ *                 example: "jane.doe@example.com"
+ *     responses:
+ *       200:
+ *         description: Client profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       description: Client ID
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "Jane Doe"
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       example: "jane.doe@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: false
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2023-07-21T14:23:45.123Z"
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2023-08-15T10:11:12.456Z"
+ *       400:
+ *         description: Validation error or email already in use
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       msg:
+ *                         type: string
+ *                         example: "Email is already in use"
+ *                       param:
+ *                         type: string
+ *                         example: "email"
+ *                       location:
+ *                         type: string
+ *                         example: "body"
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *       403:
+ *         description: Forbidden - admin role required
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Internal server error
+ */
+router.put(
+  "/admin/clients/:userId",
+  verifyToken,
+  verifyRole(["admin"]),
+  UpdateAdminClientProfileValidation,
+  validate,
+  updateAdminClientProfile
+);
+
+router.delete(
+  "/admin/clients/:userId",
+  verifyToken,
+  verifyRole(["admin"]),
+  deleteClientByAdmin
+);
 
 /**
  * @swagger

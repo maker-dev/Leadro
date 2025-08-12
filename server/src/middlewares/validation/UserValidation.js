@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, query, param } from "express-validator";
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 
@@ -111,6 +111,66 @@ const ProfileValidation = [
   }),
 ];
 
+// Validation rules for getting all clients with pagination
+const GetAllClientsWithPaginationValidation = [
+  // Validate pagination parameters
+  query("page")
+    .optional()
+    .trim()
+    .isInt({ min: 1 })
+    .withMessage("Page must be a positive integer"),
+
+  query("limit")
+    .optional()
+    .trim()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be between 1 and 100"),
+
+  // Validate search parameter
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Search term must be between 1 and 100 characters"),
+];
+
+const UpdateAdminClientProfileValidation = [
+  param("userId")
+    .trim()
+    .notEmpty()
+    .withMessage("User ID is required")
+    .isMongoId()
+    .withMessage("Invalid user ID")
+    .custom(async (userId) => {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+      return true;
+    }),
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+    .matches(/^[A-Za-z\s]+$/)
+    .withMessage("Name must contain only letters")
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Name must be between 3 and 50 characters"),
+  body("email")
+    .trim()
+    .isEmail()
+    .withMessage("Must be a valid email address")
+    .normalizeEmail()
+    .custom(async (email, { req }) => {
+      const userId = req.params.userId;
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser && existingUser._id.toString() !== userId) {
+        throw new Error("Email is already in use");
+      }
+      return true;
+    }),
+];
+
 // Validation rules for resending verification email
 const ResendVerificationEmailValidation = [
   body("email")
@@ -164,4 +224,6 @@ export {
   ProfileValidation,
   ResendVerificationEmailValidation,
   ChangeNameValidation,
+  GetAllClientsWithPaginationValidation,
+  UpdateAdminClientProfileValidation,
 };
