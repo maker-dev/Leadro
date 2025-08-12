@@ -39,7 +39,7 @@ const checkApiKeyOrRateLimitByIP = async (req, res, next) => {
       ipRateLimiter(req, res, () => {
         return res.status(401).json({
           success: false,
-          message: "Invalid or expired API key",
+          message: "Invalid or revoked API key",
         });
       });
       return;

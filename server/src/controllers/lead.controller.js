@@ -1,6 +1,7 @@
 import Lead from "../models/Lead.js";
 import ClientAccess from "../models/ClientAccess.js";
 import User from "../models/User.js";
+import ApiKey from "../models/ApiKey.js";
 /* CLIENT API */
 
 // Create new lead
@@ -726,6 +727,14 @@ const createLeadFromWebhook = async (req, res) => {
       status: status || "new", // Default to "new" if not provided
       extraFields: new Map(Object.entries(extraFields)), // Convert extra fields to Map
     });
+
+    await ApiKey.updateOne(
+      { _id: req.apiKey._id },
+      {
+        $inc: { usageCount: 1 },
+        $set: { lastUsedAt: new Date() },
+      }
+    );
 
     res.status(201).json({
       success: true,
