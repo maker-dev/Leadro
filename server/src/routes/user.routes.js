@@ -494,6 +494,112 @@ router.get("/profile", verifyToken, ProfileValidation, validate, getProfile);
 
 /**
  * @swagger
+ * /api/users/change-name:
+ *   patch:
+ *     summary: Change the authenticated user's name
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 50
+ *                 pattern: '^[A-Za-z\\s]+$'
+ *                 description: New full name (letters and spaces only)
+ *                 example: "Jane Smith"
+ *     responses:
+ *       200:
+ *         description: Name updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Name updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       example: "Jane Smith"
+ *                     email:
+ *                       type: string
+ *                       example: "jane@example.com"
+ *                     role:
+ *                       type: string
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.patch(
+  "/change-name",
+  verifyToken,
+  ChangeNameValidation,
+  validate,
+  changeName
+);
+
+/**
+ * @swagger
+ * /api/users/delete-account:
+ *   delete:
+ *     summary: Delete the authenticated user's account
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Account deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Account deleted successfully"
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete("/delete-account", verifyToken, deleteAccount);
+
+/**
+ * @swagger
  * /api/users/admin/clients:
  *   get:
  *     summary: Get all clients (Admin only)
@@ -801,117 +907,74 @@ router.put(
   updateAdminClientProfile
 );
 
+/**
+ * @swagger
+ * /api/admin/clients/{userId}:
+ *   delete:
+ *     summary: Delete a client (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: ObjectId
+ *         description: The ID of the client to delete
+ *     responses:
+ *       200:
+ *         description: Client deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User deleted successfully"
+ *       400:
+ *         description: Invalid user ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid user ID format"
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *       403:
+ *         description: Forbidden - admin role required
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Internal server error
+ */
 router.delete(
   "/admin/clients/:userId",
   verifyToken,
   verifyRole(["admin"]),
   deleteClientByAdmin
 );
-
-/**
- * @swagger
- * /api/users/change-name:
- *   patch:
- *     summary: Change the authenticated user's name
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 3
- *                 maxLength: 50
- *                 pattern: '^[A-Za-z\\s]+$'
- *                 description: New full name (letters and spaces only)
- *                 example: "Jane Smith"
- *     responses:
- *       200:
- *         description: Name updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Name updated successfully"
- *                 data:
- *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                       example: "60d21b4667d0d8992e610c85"
- *                     name:
- *                       type: string
- *                       example: "Jane Smith"
- *                     email:
- *                       type: string
- *                       example: "jane@example.com"
- *                     role:
- *                       type: string
- *                       example: "client"
- *                     isEmailVerified:
- *                       type: boolean
- *                       example: true
- *                     createdAt:
- *                       type: string
- *                       format: date-time
- *                     updatedAt:
- *                       type: string
- *                       format: date-time
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
-router.patch(
-  "/change-name",
-  verifyToken,
-  ChangeNameValidation,
-  validate,
-  changeName
-);
-
-/**
- * @swagger
- * /api/users/delete-account:
- *   delete:
- *     summary: Delete the authenticated user's account
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Account deleted successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "Account deleted successfully"
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
-router.delete("/delete-account", verifyToken, deleteAccount);
 
 export default router;
