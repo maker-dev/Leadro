@@ -17,6 +17,7 @@ import {
   getClientById,
   updateAdminClientProfile,
   deleteClientByAdmin,
+  getClientViewData,
 } from "../controllers/user.controller.js";
 import {
   ClientRegisterValidation,
@@ -1065,6 +1066,145 @@ router.delete(
   verifyToken,
   verifyRole(["admin"]),
   deleteClientByAdmin
+);
+
+/**
+ * @swagger
+ * /api/users/admin/clients/{userId}/view:
+ *   get:
+ *     summary: Get comprehensive client view data (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: ObjectId
+ *         description: The ID of the client to retrieve comprehensive data for
+ *         example: "60d21b4667d0d8992e610c85"
+ *     responses:
+ *       200:
+ *         description: Client view data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       description: Client ID
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       description: Full name of the client
+ *                       example: "John Smith"
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       description: Email address of the client
+ *                       example: "john.smith@example.com"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the account was created
+ *                       example: "2024-01-15T10:00:00Z"
+ *                     leadSummary:
+ *                       type: object
+ *                       properties:
+ *                         totalLeads:
+ *                           type: integer
+ *                           description: Total number of leads
+ *                           example: 47
+ *                         leadsByStatus:
+ *                           type: object
+ *                           description: Breakdown of leads by status
+ *                           properties:
+ *                             New:
+ *                               type: integer
+ *                               example: 12
+ *                             Contacted:
+ *                               type: integer
+ *                               example: 18
+ *                             Converted:
+ *                               type: integer
+ *                               example: 8
+ *                             Lost:
+ *                               type: integer
+ *                               example: 9
+ *                         lastLeadAdded:
+ *                           type: string
+ *                           format: date-time
+ *                           description: Date of the most recent lead
+ *                           example: "2024-12-08T14:30:00Z"
+ *                     apiKeys:
+ *                       type: object
+ *                       properties:
+ *                         totalKeys:
+ *                           type: integer
+ *                           description: Total number of API keys
+ *                           example: 20
+ *                         activeKeys:
+ *                           type: integer
+ *                           description: Number of active API keys
+ *                           example: 10
+ *                         revokedKeys:
+ *                           type: integer
+ *                           description: Number of revoked API keys
+ *                           example: 10
+ *                         lastUsedKey:
+ *                           type: string
+ *                           format: date-time
+ *                           description: Date of the most recent API key usage
+ *                           example: "2024-12-08T15:45:00Z"
+ *                     clientAccess:
+ *                       type: array
+ *                       description: List of users who have access to this client
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             description: Full name of the user
+ *                             example: "Sarah Johnson"
+ *                           email:
+ *                             type: string
+ *                             format: email
+ *                             description: Email address of the user
+ *                             example: "sarah.johnson@company.com"
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *       403:
+ *         description: Forbidden - admin role required
+ *       404:
+ *         description: Client not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Client not found"
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/admin/clients/:userId/view",
+  verifyToken,
+  verifyRole(["admin"]),
+  getClientViewData
 );
 
 export default router;

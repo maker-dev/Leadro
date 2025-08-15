@@ -55,6 +55,11 @@ export const getClientById = async (userId: string) => {
   return response.data;
 };
 
+export const getClientViewData = async (userId: string) => {
+  const response = await axios.get(`/users/admin/clients/${userId}/view`);
+  return response.data;
+};
+
 export const updateClientProfile = async (
   userId: string,
   data: UpdateClientProfileParams

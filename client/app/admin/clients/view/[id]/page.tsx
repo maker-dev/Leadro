@@ -1,8 +1,8 @@
 "use client";
 
 import { usePageContext } from "@/context/PageTitleContext";
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { FiUser } from "react-icons/fi";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { FiBarChart2 } from "react-icons/fi";
@@ -17,204 +17,73 @@ import {
 import formatDate from "@/utils/formateDate";
 import getInitials from "@/utils/getInitials";
 import BaseCard from "@/components/ui/cards/BaseCard";
-
-// 1. Update mock data to support multiple API keys per client
-const fakeClients = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    createdAt: "2024-01-15T10:00:00Z",
-    leadSummary: {
-      totalLeads: 47,
-      leadsByStatus: {
-        New: 12,
-        Contacted: 18,
-        Converted: 8,
-        Lost: 9,
-      },
-      lastLeadAdded: "2024-12-08T14:30:00Z",
-    },
-    apiKeys: [
-      {
-        key: "ABCD1234SECRETKEY1",
-        status: "Active",
-        lastUsed: "2024-12-10T09:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY2",
-        status: "Active",
-        lastUsed: "2024-12-09T08:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY3",
-        status: "Revoked",
-        lastUsed: "2024-11-01T10:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY4",
-        status: "Revoked",
-        lastUsed: "2024-10-01T10:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY5",
-        status: "Active",
-        lastUsed: "2024-12-08T07:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY6",
-        status: "Active",
-        lastUsed: "2024-12-07T06:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY7",
-        status: "Active",
-        lastUsed: "2024-12-06T05:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY8",
-        status: "Revoked",
-        lastUsed: "2024-09-01T10:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY9",
-        status: "Active",
-        lastUsed: "2024-12-05T04:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY10",
-        status: "Active",
-        lastUsed: "2024-12-04T03:00:00Z",
-      },
-      {
-        key: "ABCD1234SECRETKEY11",
-        status: "Revoked",
-        lastUsed: "2024-08-01T10:00:00Z",
-      },
-    ],
-    clientAccess: [
-      { name: "Sarah Johnson", email: "sarah.johnson@company.com" },
-      { name: "Mike Davis", email: "mike.davis@company.com" },
-      { name: "Lisa Chen", email: "lisa.chen@company.com" },
-      { name: "Robert Wilson", email: "robert.wilson@company.com" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Jane Doe",
-    email: "jane.doe@example.com",
-    createdAt: "2024-02-10T14:30:00Z",
-    leadSummary: {
-      totalLeads: 30,
-      leadsByStatus: {
-        New: 5,
-        Contacted: 10,
-        Converted: 10,
-        Lost: 5,
-      },
-      lastLeadAdded: "2024-11-20T10:00:00Z",
-    },
-    apiKeyInfo: {
-      apiKey: "XYZ9876SECRETKEY2",
-      status: "Revoked",
-      expirationDate: "2024-08-01T00:00:00Z",
-    },
-    clientAccess: [
-      { name: "Emily Clark", email: "emily.clark@company.com" },
-      { name: "Tom Lee", email: "tom.lee@company.com" },
-    ],
-  },
-  {
-    id: "3",
-    name: "New User",
-    email: "new.user@example.com",
-    createdAt: "2024-04-01T09:00:00Z",
-    leadSummary: {
-      totalLeads: 0,
-      leadsByStatus: {
-        New: 0,
-        Contacted: 0,
-        Converted: 0,
-        Lost: 0,
-      },
-      lastLeadAdded: null,
-    },
-    // No API key info — represents a brand new user
-    clientAccess: [],
-  },
-  {
-    id: "4",
-    name: "Musashi",
-    email: "musashi2@example.com",
-    createdAt: "2024-05-12T16:20:00Z",
-    leadSummary: {
-      totalLeads: 2,
-      leadsByStatus: {
-        New: 2,
-        Contacted: 0,
-        Converted: 0,
-        Lost: 0,
-      },
-      lastLeadAdded: "2024-11-25T11:00:00Z",
-    },
-    apiKeyInfo: {
-      apiKey: "MUSA2024SECRETKEY3",
-      status: "Active",
-      expirationDate: "2025-05-01T00:00:00Z",
-    },
-    clientAccess: [
-      { name: "Akira Tanaka", email: "akira.tanaka@company.com" },
-      { name: "Yuki Sato", email: "yuki.sato@company.com" },
-    ],
-  },
-  {
-    id: "5",
-    name: "Amina Farouk",
-    email: "amina.farouk@example.com",
-    createdAt: "2024-03-22T12:00:00Z",
-    leadSummary: {
-      totalLeads: 19,
-      leadsByStatus: {
-        New: 4,
-        Contacted: 7,
-        Converted: 5,
-        Lost: 3,
-      },
-      lastLeadAdded: "2024-11-30T15:45:00Z",
-    },
-    apiKeyInfo: {
-      apiKey: "AMINAKEY2024ZXY",
-      status: "Expired",
-      expirationDate: "2024-10-01T00:00:00Z",
-    },
-    clientAccess: [
-      { name: "Omar Khaled", email: "omar.khaled@company.com" },
-      { name: "Fatima Zahra", email: "fatima.zahra@company.com" },
-      { name: "Nour Hassan", email: "nour.hassan@company.com" },
-    ],
-  },
-];
+import { getClientViewData } from "@/services/AdminService";
+import { toast } from "sonner";
 
 function ViewClientPage() {
   const { setLabel, setTitle } = usePageContext();
   const { id } = useParams();
-  const client = fakeClients.find((c) => c.id === id);
+  const router = useRouter();
+  
+  // State for client data
+  const [client, setClient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLabel("Clients");
     setTitle("View Client");
   }, [setLabel, setTitle]);
 
-  if (!client) {
+  // Fetch client data when component mounts
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getClientViewData(id as string);
+        setClient(response.data);
+      } catch (error: any) {
+        console.error("Error fetching client data:", error);
+        setError(error?.response?.data?.message || "Failed to load client data");
+        toast.error("Failed to load client data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientData();
+  }, [id]);
+
+  // Loading state
+  if (loading) {
     return (
-      <div
-        className="flex justify-center items-center h-64"
-        aria-label="Client not found"
-        tabIndex={0}
-      >
-        <span className="text-lg font-semibold text-gray-500">
-          Client not found.
-        </span>
+      <div className="flex justify-center items-center h-64" aria-label="Loading client data" tabIndex={0}>
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-lg font-semibold text-gray-700">Loading client data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !client) {
+    return (
+      <div className="flex justify-center items-center h-64" aria-label="Error loading client data" tabIndex={0}>
+        <div className="text-center">
+          <span className="text-lg font-semibold text-red-500 mb-2 block">
+            {error || "Client not found"}
+          </span>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
@@ -253,24 +122,26 @@ function ViewClientPage() {
       >
         <div className="text-2xl font-bold mb-1">Quick Actions</div>
         <div className="text-gray-500 mb-6">Common actions for this client</div>
-        <div className="flex flex-col md:flex-row gap-4">
-          <button
-            className="flex items-center justify-center gap-2 bg-black text-white font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base focus:outline-none focus:ring hover:bg-gray-900 cursor-pointer"
-            aria-label="Add Lead for this Client"
-            tabIndex={0}
-          >
-            <FiPlus className="w-5 h-5" />
-            Add Lead for this Client
-          </button>
-          <button
-            className="flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base border border-gray-200 focus:outline-none focus:ring hover:bg-gray-50 cursor-pointer"
-            aria-label="View All Leads"
-            tabIndex={0}
-          >
-            <FiEye className="w-5 h-5" />
-            View All Leads
-          </button>
-        </div>
+                 <div className="flex flex-col md:flex-row gap-4">
+           <button
+             onClick={() => router.push('/admin/leads/create')}
+             className="flex items-center justify-center gap-2 bg-black text-white font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base focus:outline-none focus:ring hover:bg-gray-900 cursor-pointer"
+             aria-label="Add Lead for this Client"
+             tabIndex={0}
+           >
+             <FiPlus className="w-5 h-5" />
+             Add Lead for this Client
+           </button>
+           <button
+             onClick={() => router.push('/admin/leads')}
+             className="flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-lg px-6 py-3 w-full md:w-1/2 text-base border border-gray-200 focus:outline-none focus:ring hover:bg-gray-50 cursor-pointer"
+             aria-label="View All Leads"
+             tabIndex={0}
+           >
+             <FiEye className="w-5 h-5" />
+             View All Leads
+           </button>
+         </div>
       </div>
 
       {/* Lead Summary Card */}
@@ -406,7 +277,7 @@ function ViewClientPage() {
         title="API Keys Information"
         description=""
       >
-        {client.apiKeys && client.apiKeys.length > 0 ? (
+        {client.apiKeys && client.apiKeys.totalKeys > 0 ? (
           <div className="flex flex-col gap-6">
             {/* Top Row: Total Keys & Status Badges */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
@@ -416,7 +287,7 @@ function ViewClientPage() {
                   Total Keys
                 </span>
                 <span className="text-3xl font-bold tracking-tight">
-                  {client.apiKeys.length}
+                  {client.apiKeys.totalKeys}
                 </span>
               </div>
               {/* Status Badges */}
@@ -431,8 +302,7 @@ function ViewClientPage() {
                     className="w-4 h-4 text-white"
                     aria-hidden="true"
                   />
-                  {client.apiKeys.filter((k) => k.status === "Active").length}{" "}
-                  Active
+                  {client.apiKeys.activeKeys} Active
                 </span>
                 {/* Revoked Badge */}
                 <span
@@ -444,8 +314,7 @@ function ViewClientPage() {
                     className="w-4 h-4 text-white"
                     aria-hidden="true"
                   />
-                  {client.apiKeys.filter((k) => k.status === "Revoked").length}{" "}
-                  Revoked
+                  {client.apiKeys.revokedKeys} Revoked
                 </span>
               </div>
             </div>
@@ -453,33 +322,23 @@ function ViewClientPage() {
             <div className="flex flex-col gap-1">
               <span className="text-gray-500 font-semibold">Last Used Key</span>
               <span className="text-lg">
-                {(() => {
-                  const lastUsed = client.apiKeys.reduce<
-                    | { key: string; status: string; lastUsed: string }
-                    | undefined
-                  >((latest, k) => {
-                    if (!latest) return k;
-                    return new Date(k.lastUsed) > new Date(latest.lastUsed)
-                      ? k
-                      : latest;
-                  }, undefined);
-                  return lastUsed
-                    ? new Date(lastUsed.lastUsed).toLocaleString("en-US")
-                    : "-";
-                })()}
+                {client.apiKeys.lastUsedKey
+                  ? new Date(client.apiKeys.lastUsedKey).toLocaleString("en-US")
+                  : "-"}
               </span>
             </div>
             <hr className="my-2 border-gray-200" />
-            <div className="flex justify-start">
-              <button
-                className="flex items-center gap-2 border rounded-lg px-4 py-2 font-medium hover:bg-gray-50 focus:outline-none focus:ring cursor-pointer"
-                aria-label="Manage API Keys"
-                tabIndex={0}
-              >
-                <FiKey className="w-5 h-5" />
-                Manage API Keys
-              </button>
-            </div>
+                         <div className="flex justify-start">
+               <button
+                 onClick={() => router.push(`/admin/api-keys/view/${client.id}`)}
+                 className="flex items-center gap-2 border rounded-lg px-4 py-2 font-medium hover:bg-gray-50 focus:outline-none focus:ring cursor-pointer"
+                 aria-label="Manage API Keys"
+                 tabIndex={0}
+               >
+                 <FiKey className="w-5 h-5" />
+                 Manage API Keys
+               </button>
+             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[120px] text-center">
@@ -511,7 +370,7 @@ function ViewClientPage() {
               No users have access yet.
             </div>
           ) : (
-            client.clientAccess.map((user, idx) => (
+            client.clientAccess.map((user: any, idx: number) => (
               <div
                 key={user.email}
                 className="flex items-center gap-4 bg-gray-50 rounded-xl px-5 py-4 shadow-sm"

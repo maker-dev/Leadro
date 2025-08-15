@@ -311,6 +311,106 @@ const deleteClientByAdmin = async (req, res) => {
   }
 };
 
+const getClientViewData = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists and is a client
+    const user = await User.findById(userId).select("-password");
+    if (!user || user.role !== "client") {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    // Get leads summary
+    const leads = await Lead.find({ ownerId: userId });
+    const totalLeads = leads.length;
+    
+    // Group leads by status
+    const leadsByStatus = leads.reduce((acc, lead) => {
+      const status = lead.status || 'new';
+      acc[status.charAt(0).toUpperCase() + status.slice(1)] = (acc[status.charAt(0).toUpperCase() + status.slice(1)] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Ensure all statuses are present with default value 0
+    const allStatuses = ['new', 'contacted', 'converted', 'lost'];
+    allStatuses.forEach(status => {
+      const statusKey = status.charAt(0).toUpperCase() + status.slice(1);
+      if (!(statusKey in leadsByStatus)) {
+        leadsByStatus[statusKey] = 0;
+      }
+    });
+    
+    // Get last lead added
+    let lastLeadAdded = null;
+    if (leads.length > 0) {
+      const leadDates = leads.map(lead => new Date(lead.createdAt).getTime());
+      lastLeadAdded = Math.max(...leadDates);
+    }
+
+    // Get API keys summary
+    const apiKeys = await ApiKey.find({ clientId: userId });
+    const totalKeys = apiKeys.length;
+    const activeKeys = apiKeys.filter(key => !key.revoked).length;
+    const revokedKeys = apiKeys.filter(key => key.revoked).length;
+    
+    // Get last used key date
+    let lastUsedKey = null;
+    if (apiKeys.length > 0) {
+      const keyDates = apiKeys
+        .filter(key => key.lastUsedAt)
+        .map(key => new Date(key.lastUsedAt).getTime());
+      if (keyDates.length > 0) {
+        lastUsedKey = Math.max(...keyDates);
+      }
+    }
+
+    // Get client access (users who have access to this client)
+    const clientAccess = await ClientAccess.find({ ownerId: userId })
+      .populate('sharedWithId', 'name email')
+      .lean();
+
+    const clientAccessFormatted = clientAccess.map(access => ({
+      name: access.sharedWithId.name,
+      email: access.sharedWithId.email,
+    }));
+
+    // Format the response
+    const clientData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+      leadSummary: {
+        totalLeads,
+        leadsByStatus,
+        lastLeadAdded: lastLeadAdded ? new Date(lastLeadAdded).toISOString() : null,
+      },
+      apiKeys: {
+        totalKeys,
+        activeKeys,
+        revokedKeys,
+        lastUsedKey: lastUsedKey ? new Date(lastUsedKey).toISOString() : null,
+      },
+      clientAccess: clientAccessFormatted,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: clientData,
+    });
+  } catch (error) {
+    console.error("Get client view data error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 //Hybrid APIS
 
 const login = async (req, res) => {
@@ -519,6 +619,7 @@ export {
   getClientById,
   updateAdminClientProfile,
   deleteClientByAdmin,
+  getClientViewData,
   clientVerifyEmail,
   resendVerificationEmail,
   logout,
