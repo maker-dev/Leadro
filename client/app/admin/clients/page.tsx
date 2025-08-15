@@ -9,7 +9,10 @@ import EditFormSchema from "./schemas/EditClientSchema";
 import EditFormValues from "./types/EditClientType";
 import ConfirmDeleteModal from "@/components/modals/ConfirmDeleteModal";
 import { usePageContext } from "@/context/PageTitleContext";
+import { getAllClientsWithPagination, updateClientProfile, getClientById, deleteClient } from "@/services/AdminService";
+import { registerUser } from "@/services/AuthService";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const clientFields: FieldConfig[] = [
   {
@@ -66,57 +69,7 @@ const initialClientValues: AddFormValues = {
   confirmPassword: "",
 };
 
-// Fake data type
-const fakeClients = [
-  {
-    id: 1,
-    name: "Acuity Infotech FZCO",
-    email: "info@acuity.ae",
-    createdAt: "2023-01-01",
-  },
-  {
-    id: 2,
-    name: "ABC Infotech",
-    email: "info@abcinfotech.com",
-    createdAt: "2023-01-02",
-  },
-  {
-    id: 3,
-    name: "NEW Infotech",
-    email: "info@newinfotech.in",
-    createdAt: "2023-01-03",
-  },
-  {
-    id: 4,
-    name: "ABC Infotech 2",
-    email: "info2@acuity.ae",
-    createdAt: "2023-01-04",
-  },
-  {
-    id: 5,
-    name: "ABC Infotech 3",
-    email: "info3@acuity.ae",
-    createdAt: "2023-01-05",
-  },
-  {
-    id: 6,
-    name: "ABC Infotech 4",
-    email: "info4@acuity.ae",
-    createdAt: "2023-01-06",
-  },
-  {
-    id: 7,
-    name: "ABC Infotech 5",
-    email: "info5@acuity.ae",
-    createdAt: "2023-01-07",
-  },
-  {
-    id: 8,
-    name: "ABC Infotech 6",
-    email: "info6@acuity.ae",
-    createdAt: "2023-01-08",
-  },
-];
+
 
 const rowsPerPageOptions = [8, 16, 32];
 
@@ -140,75 +93,231 @@ function ClientsPage() {
     setTitle("Clients");
   }, [setLabel, setTitle]);
 
+  // API data state
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 8,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  // UI state
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<EditFormValues | null>(
+  const [editingClient, setEditingClient] = useState<EditFormValues & { id?: string } | null>(
     null
   );
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(8);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingClientId, setDeletingClientId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  
 
-  // Pagination logic (UI only)
-  const totalRows = 1240; // Example total
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
 
-  const handleAddClient = (formData: AddFormValues) => {
-    // Handle form data (API call, etc.)
-    console.log("Add Client", formData);
-    setIsAddClientOpen(false);
-  };
+  // Load clients on component mount and when pagination or search changes
+  useEffect(() => {
+    loadClients();
+  }, [page, rowsPerPage, appliedSearch]);
 
-  const handleEdit = (id: number) => {
-    const client = fakeClients.find((c) => c.id === id);
-    if (client) {
-      setEditingClient({
-        name: client.name,
-        email: client.email,
-      });
-      setIsEditClientOpen(true);
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page,
+        limit: rowsPerPage,
+        search: appliedSearch || undefined,
+      };
+
+      const response = await getAllClientsWithPagination(params);
+      setClients(response.data.clients);
+      setPagination(response.data.pagination);
+    } catch (error: any) {
+      toast.error("Failed to load clients");
+      console.error("Error loading clients:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateClient = (formData: EditFormValues) => {
-    // Handle update logic (API call, etc.)
-    console.log("Update Client", formData);
-    setIsEditClientOpen(false);
-    setEditingClient(null);
+  const handleAddClient = async (
+    formData: AddFormValues,
+    {
+      setError,
+    }: {
+      setError: (
+        field: string,
+        error: { type: string; message: string }
+      ) => void;
+    }
+  ) => {
+    try {
+      // Call the registerUser API to create a new client
+      await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      });
+      
+      toast.success("Client created successfully");
+      
+      // Reload the clients to reflect the new client
+      await loadClients();
+      
+      // Close modal
+      setIsAddClientOpen(false);
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      let hasFieldError = false;
+      
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+            hasFieldError = true;
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to create client. Please try again.");
+      }
+      
+      // Only close modal if there are no field errors
+      if (!hasFieldError) {
+        setIsAddClientOpen(false);
+      }
+      // Don't reset form on error - let user see their input and fix the error
+    }
   };
 
-  const handleDelete = (id: number) => {
+  const handleEdit = async (id: string) => {
+    try {
+      // Fetch the latest client data from the API
+      const response = await getClientById(id);
+      const client = response.data;
+      
+      if (client) {
+        setEditingClient({
+          id: client._id || client.id,
+          name: client.name,
+          email: client.email,
+        });
+        setIsEditClientOpen(true);
+      }
+    } catch (error: any) {
+      toast.error("Failed to load client details");
+      console.error("Error loading client details:", error);
+    }
+  };
+
+  const handleUpdateClient = async (
+    formData: EditFormValues,
+    {
+      setError,
+    }: {
+      setError: (
+        field: string,
+        error: { type: string; message: string }
+      ) => void;
+    }
+  ) => {
+    if (!editingClient) return;
+
+    try {
+      // Call the updateClientProfile API
+      await updateClientProfile(editingClient.id!, {
+        name: formData.name,
+        email: formData.email,
+      });
+
+      toast.success("Client updated successfully");
+      
+      // Reload the clients to reflect the changes
+      await loadClients();
+      
+      // Close modal and reset state
+      setIsEditClientOpen(false);
+      setEditingClient(null);
+    } catch (error: any) {
+      const errors = error?.response?.data?.errors;
+      let hasFieldError = false;
+      
+      if (Array.isArray(errors)) {
+        errors.forEach((err: any) => {
+          if (err.field && err.message) {
+            setError(err.field, { type: "server", message: err.message });
+            hasFieldError = true;
+          } else if (err.message) {
+            toast.error(err.message);
+          }
+        });
+      } else if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to update client. Please try again.");
+      }
+      
+      // Only close modal if there are no field errors
+      if (!hasFieldError) {
+        setIsEditClientOpen(false);
+        setEditingClient(null);
+      }
+      // Don't reset form on error - let user see their input and fix the error
+    }
+  };
+
+  const handleDelete = (id: string) => {
     setDeletingClientId(id);
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (deletingClientId !== null) {
-      // Handle delete logic (API call, etc.)
-      console.log("Delete client", deletingClientId);
+  const handleConfirmDelete = async () => {
+    if (!deletingClientId) return;
+
+    try {
+      setLoadingDelete(true);
+      // Call the deleteClient API
+      await deleteClient(deletingClientId);
+      toast.success("Client deleted successfully");
+      
+      // Reload the clients to reflect the deletion
+      await loadClients();
+    } catch (error: any) {
+      toast.error("Failed to delete client");
+      console.error("Error deleting client:", error);
+    } finally {
+      setLoadingDelete(false);
+      setIsDeleteModalOpen(false);
+      setDeletingClientId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setDeletingClientId(null);
   };
 
-  const handlePrevPage = () => {
-    if (page > 1) setPage(page - 1);
-  };
 
-  const handleNextPage = () => {
-    if (page < totalPages) setPage(page + 1);
-  };
-
-  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  };
 
   const handleSearch = () => {
-    // Call API with searchTerm or handle search logic here
-    console.log("Search triggered for:", searchTerm);
+    setAppliedSearch(searchTerm);
+    setPage(1); // Reset to first page when searching
   };
 
   const handleSearchInputKeyDown = (
@@ -217,6 +326,10 @@ function ClientsPage() {
     if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  const handleSearchBlur = () => {
+    handleSearch();
   };
 
   return (
@@ -239,6 +352,7 @@ function ClientsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchInputKeyDown}
+              onBlur={handleSearchBlur}
               placeholder="Search..."
               aria-label="Search..."
               tabIndex={0}
@@ -255,16 +369,33 @@ function ClientsPage() {
           </button>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-gray-700 font-medium">
+                Loading clients...
+              </span>
+            </div>
+          </div>
+        )}
         <BaseTable
           columns={columns}
-          data={fakeClients}
-          rowKey={(row) => row.id}
+          data={clients}
+          rowKey={(row) => row._id || row.id}
           renderCell={(row, colKey) => {
+            if (colKey === "createdAt") {
+              return new Date(row.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+            }
             if (colKey === "actions") {
               return (
                 <div className="flex justify-end gap-2">
-                  <Link href={`/admin/clients/view/${row.id}`} passHref>
+                  <Link href={`/admin/clients/view/${row._id || row.id}`} passHref>
                     <button
                       tabIndex={0}
                       aria-label={`View lead ${row.email}`}
@@ -278,7 +409,7 @@ function ClientsPage() {
                     </button>
                   </Link>
                   <button
-                    onClick={() => handleEdit(row.id)}
+                    onClick={() => handleEdit(row._id || row.id)}
                     tabIndex={0}
                     aria-label={`Edit ${row.name}`}
                     title="Edit"
@@ -290,7 +421,7 @@ function ClientsPage() {
                     />
                   </button>
                   <button
-                    onClick={() => handleDelete(row.id)}
+                    onClick={() => handleDelete(row._id || row.id)}
                     tabIndex={0}
                     aria-label={`Delete ${row.name}`}
                     title="Delete"
@@ -309,7 +440,7 @@ function ClientsPage() {
           }}
           page={page}
           rowsPerPage={rowsPerPage}
-          totalRows={totalRows}
+          totalRows={pagination.totalItems}
           onPageChange={setPage}
           onRowsPerPageChange={setRowsPerPage}
           rowsPerPageOptions={rowsPerPageOptions}
@@ -326,31 +457,30 @@ function ClientsPage() {
         submitLabel="Add Client"
         cancelLabel="Cancel"
       />
-      <FormModal
-        isOpen={isEditClientOpen}
-        onClose={() => {
-          setIsEditClientOpen(false);
-          setEditingClient(null);
-        }}
-        onSubmit={handleUpdateClient}
-        title="Edit Client"
-        fields={editFields}
-        initialValues={editingClient || { name: "", email: "" }}
-        validationSchema={EditFormSchema}
-        submitLabel="Update Client"
-        cancelLabel="Cancel"
-      />
+             <FormModal
+         isOpen={isEditClientOpen}
+         onClose={() => {
+           setIsEditClientOpen(false);
+           setEditingClient(null);
+         }}
+         onSubmit={handleUpdateClient}
+         title="Edit Client"
+         fields={editFields}
+         initialValues={editingClient || { name: "", email: "" }}
+         key={editingClient?.id || "empty"} // Force re-render when editingClient changes
+         validationSchema={EditFormSchema}
+         submitLabel="Update Client"
+         cancelLabel="Cancel"
+       />
       <ConfirmDeleteModal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setDeletingClientId(null);
-        }}
+        onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
         title="Delete Client"
         description="Are you sure you want to delete this client? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        loading={loadingDelete}
       />
     </div>
   );

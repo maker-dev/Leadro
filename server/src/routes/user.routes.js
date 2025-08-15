@@ -14,6 +14,7 @@ import {
   changeName,
   deleteAccount,
   getAllClientsWithPagination,
+  getClientById,
   updateAdminClientProfile,
   deleteClientByAdmin,
 } from "../controllers/user.controller.js";
@@ -775,6 +776,95 @@ router.get(
   GetAllClientsWithPaginationValidation,
   validate,
   getAllClientsWithPagination
+);
+
+/**
+ * @swagger
+ * /api/users/admin/clients/{userId}:
+ *   get:
+ *     summary: Get a specific client by ID (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: ObjectId
+ *         description: The ID of the client to retrieve
+ *         example: "60d21b4667d0d8992e610c85"
+ *     responses:
+ *       200:
+ *         description: Client retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       description: Client ID
+ *                       example: "60d21b4667d0d8992e610c85"
+ *                     name:
+ *                       type: string
+ *                       description: Full name of the client
+ *                       example: "Jane Smith"
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       description: Email address of the client
+ *                       example: "jane.smith@example.com"
+ *                     role:
+ *                       type: string
+ *                       description: User role
+ *                       example: "client"
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                       description: Whether the email has been verified
+ *                       example: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the account was created
+ *                       example: "2023-07-21T14:23:45.123Z"
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: When the account was last updated
+ *                       example: "2023-08-15T10:11:12.456Z"
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *       403:
+ *         description: Forbidden - admin role required
+ *       404:
+ *         description: Client not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Client not found"
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/admin/clients/:userId",
+  verifyToken,
+  verifyRole(["admin"]),
+  getClientById
 );
 
 /**

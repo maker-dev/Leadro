@@ -24,7 +24,7 @@ type FormModalProps = {
         error: { type: string; message: string }
       ) => void;
     }
-  ) => void;
+  ) => Promise<void>;
   title: string;
   fields: FieldConfig[];
   initialValues: Record<string, any>;
@@ -92,9 +92,13 @@ const FormModal = ({
 
   if (!isOpen) return null;
 
-  const handleFormSubmit = (data: any) => {
-    onSubmit(data, { setError });
-    // Remove automatic reset - let parent control when to reset
+  const handleFormSubmit = async (data: any) => {
+    try {
+      await onSubmit(data, { setError });
+    } catch (error) {
+      // Error handling is done in the parent function
+      console.error('Form submission error:', error);
+    }
   };
 
   // Helper to convert error to FieldError type
@@ -151,9 +155,16 @@ const FormModal = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[#31B5B2] text-white font-semibold shadow hover:bg-[#269e9b] focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+              className="px-4 py-2 rounded-lg bg-[#31B5B2] text-white font-semibold shadow hover:bg-[#269e9b] focus:outline-none focus:ring-2 focus:ring-green-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[100px] justify-center"
             >
-              {submitLabel}
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                submitLabel
+              )}
             </button>
           </div>
         </form>

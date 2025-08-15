@@ -242,6 +242,32 @@ const updateAdminClientProfile = async (req, res) => {
   }
 };
 
+const getClientById = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists and is a client
+    const user = await User.findById(userId).select("-password");
+    if (!user || user.role !== "client") {
+      return res.status(404).json({
+        success: false,
+        message: "Client not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Get client by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 const deleteClientByAdmin = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -487,6 +513,7 @@ export {
   getProfile,
   getAllClients,
   getAllClientsWithPagination,
+  getClientById,
   updateAdminClientProfile,
   deleteClientByAdmin,
   clientVerifyEmail,

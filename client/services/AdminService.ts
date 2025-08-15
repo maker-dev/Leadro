@@ -50,6 +50,11 @@ export const getAllClientsWithPagination = async (
   return response.data;
 };
 
+export const getClientById = async (userId: string) => {
+  const response = await axios.get(`/users/admin/clients/${userId}`);
+  return response.data;
+};
+
 export const updateClientProfile = async (
   userId: string,
   data: UpdateClientProfileParams
