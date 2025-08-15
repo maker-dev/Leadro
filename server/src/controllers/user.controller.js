@@ -125,7 +125,10 @@ const resendVerificationEmail = async (req, res) => {
 const getAllClients = async (req, res) => {
   try {
     // Find all users with client role, excluding password
-    const clients = await User.find({ role: "client" }).select("-password");
+    const clients = await User.find({
+      role: "client",
+      isEmailVerified: true,
+    }).select("-password");
 
     res.status(200).json({
       success: true,
@@ -150,7 +153,7 @@ const getAllClientsWithPagination = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build query
-    const query = { role: "client" };
+    const query = { role: "client", isEmailVerified: true };
 
     // If search is provided, search by name or email
     if (search) {
