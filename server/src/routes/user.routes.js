@@ -870,7 +870,7 @@ router.get(
 
 /**
  * @swagger
- * /api/admin/clients/{userId}:
+ * /api/users/admin/clients/{userId}:
  *   put:
  *     summary: Update a client's profile (Admin only)
  *     tags: [Users]
@@ -1000,7 +1000,7 @@ router.put(
 
 /**
  * @swagger
- * /api/admin/clients/{userId}:
+ * /api/users/admin/clients/{userId}:
  *   delete:
  *     summary: Delete a client (Admin only)
  *     tags: [Users]

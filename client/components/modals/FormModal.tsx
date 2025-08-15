@@ -111,7 +111,7 @@ const FormModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm backdrop-saturate-150 transition-all">
       <div
         ref={modalRef}
-        className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-0 relative animate-fadeInScale mx-4"
+        className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-0 relative animate-fadeInScale mx-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="form-modal-title"
@@ -126,7 +126,7 @@ const FormModal = ({
         </div>
         <form
           onSubmit={handleSubmit(handleFormSubmit)}
-          className="space-y-4 px-6 py-6"
+          className="space-y-4 px-6 py-6 min-h-0"
           noValidate
         >
           {fields.map((field) => {
@@ -181,6 +181,20 @@ const FormModal = ({
           100% {
             opacity: 1;
             transform: scale(1);
+          }
+        }
+        
+        /* Cross-platform height consistency */
+        @media screen and (max-height: 600px) {
+          .max-h-\\[90vh\\] {
+            max-height: 85vh;
+          }
+        }
+        
+        /* Windows-specific adjustments */
+        @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+          .max-h-\\[90vh\\] {
+            max-height: 80vh;
           }
         }
       `}</style>
