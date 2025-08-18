@@ -20,6 +20,8 @@ import {
   getClientViewData,
   getClientDashboardData,
   getClientLeadActivity,
+  getAdminDashboardData,
+  getAdminLeadActivity,
 } from "../controllers/user.controller.js";
 import {
   ClientRegisterValidation,
@@ -1405,5 +1407,209 @@ router.get(
   verifyRole(["admin"]),
   getClientViewData
 );
+
+/**
+ * @swagger
+ * /api/users/admin/dashboard:
+ *   get:
+ *     summary: Get admin dashboard data
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieves dashboard statistics and data for admin users, including client counts, lead counts, and API key statistics
+ *     responses:
+ *       200:
+ *         description: Admin dashboard data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalClients:
+ *                       type: integer
+ *                       description: Total number of verified client accounts in the system
+ *                       example: 25
+ *                       minimum: 0
+ *                     totalLeads:
+ *                       type: integer
+ *                       description: Total number of leads across all clients in the system
+ *                       example: 150
+ *                       minimum: 0
+ *                     apiUsageToday:
+ *                       type: integer
+ *                       description: Number of API keys that were used today
+ *                       example: 8
+ *                       minimum: 0
+ *                     totalApiKeys:
+ *                       type: integer
+ *                       description: Total number of API keys in the system
+ *                       example: 30
+ *                       minimum: 0
+ *                     activeApiKeys:
+ *                       type: integer
+ *                       description: Number of active (non-revoked) API keys
+ *                       example: 28
+ *                       minimum: 0
+ *                     revokedApiKeys:
+ *                       type: integer
+ *                       description: Number of revoked API keys
+ *                       example: 2
+ *                       minimum: 0
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Access denied"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+router.get(
+  "/admin/dashboard",
+  verifyToken,
+  verifyRole(["admin"]),
+  getAdminDashboardData
+);
+
+/**
+ * @swagger
+ * /api/users/admin/lead-activity:
+ *   get:
+ *     summary: Get admin lead activity for all clients over the last 7 days
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieves lead activity data across all clients for admin users over the last 7 days, including daily counts by status. This provides a system-wide view of lead generation and conversion trends.
+ *     responses:
+ *       200:
+ *         description: Admin lead activity data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   description: Array of 7 days with aggregated lead activity data from all clients
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       day:
+ *                         type: string
+ *                         description: Day of the week (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
+ *                         example: "Mon"
+ *                         enum: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+ *                       leads:
+ *                         type: integer
+ *                         description: Total number of leads across all clients for this day
+ *                         example: 25
+ *                         minimum: 0
+ *                       new:
+ *                         type: integer
+ *                         description: Number of leads with 'new' status across all clients for this day
+ *                         example: 15
+ *                         minimum: 0
+ *                       contacted:
+ *                         type: integer
+ *                         description: Number of leads with 'contacted' status across all clients for this day
+ *                         example: 7
+ *                         minimum: 0
+ *                       converted:
+ *                         type: integer
+ *                         description: Number of leads with 'converted' status across all clients for this day
+ *                         example: 2
+ *                         minimum: 0
+ *                       lost:
+ *                         type: integer
+ *                         description: Number of leads with 'lost' status across all clients for this day
+ *                         example: 1
+ *                         minimum: 0
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Access denied"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+router.get(
+  "/admin/lead-activity",
+  verifyToken,
+  verifyRole(["admin"]),
+  getAdminLeadActivity
+);
+
 
 export default router;

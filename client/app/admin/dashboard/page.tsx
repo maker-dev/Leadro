@@ -1,7 +1,7 @@
 "use client";
 import StatusCard from "@/components/ui/cards/StatusCard";
 import { usePageContext } from "@/context/PageTitleContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FaUsers,
   FaAddressBook,
@@ -20,125 +20,124 @@ import {
   CartesianGrid,
 } from "recharts";
 import LeadTooltip from "@/components/tooltip/LeadToolTip";
-
-// Mock data for the last 7 days
-const leadsData = [
-  {
-    day: "Mon",
-    leads: 111,
-    new: 50,
-    contacted: 35,
-    converted: 20,
-    lost: 6,
-  },
-  {
-    day: "Tue",
-    leads: 18,
-    new: 8,
-    contacted: 5,
-    converted: 4,
-    lost: 1,
-  },
-  {
-    day: "Wed",
-    leads: 9,
-    new: 4,
-    contacted: 3,
-    converted: 1,
-    lost: 1,
-  },
-  {
-    day: "Thu",
-    leads: 22,
-    new: 10,
-    contacted: 7,
-    converted: 3,
-    lost: 2,
-  },
-  {
-    day: "Fri",
-    leads: 15,
-    new: 6,
-    contacted: 5,
-    converted: 3,
-    lost: 1,
-  },
-  {
-    day: "Sat",
-    leads: 17,
-    new: 7,
-    contacted: 6,
-    converted: 3,
-    lost: 1,
-  },
-  {
-    day: "Sun",
-    leads: 20,
-    new: 9,
-    contacted: 6,
-    converted: 4,
-    lost: 1,
-  },
-];
-
-// Mock stats
-const stats = [
-  { label: "All", value: 45, color: "text-blue-600" },
-  { label: "New", value: 20, color: "text-blue-400" },
-  { label: "Contacted", value: 15, color: "text-yellow-500" },
-  { label: "Converted", value: 7, color: "text-green-600" },
-  { label: "Lost", value: 3, color: "text-red-500" },
-];
+import { getAdminDashboardData, AdminDashboardData, getAdminLeadActivity, AdminLeadActivityData } from "@/services/AdminService";
 
 function DaschboardPage() {
   const { setLabel, setTitle } = usePageContext();
+  
+  // ===================== Dashboard Data State =====================
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
+  const [leadActivity, setLeadActivity] = useState<AdminLeadActivityData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLabel("Overview");
     setTitle("Overview");
+    
+    // Fetch dashboard data and lead activity
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch both dashboard data and lead activity in parallel
+        const [dashboardResponse, leadActivityResponse] = await Promise.all([
+          getAdminDashboardData(),
+          getAdminLeadActivity()
+        ]);
+        
+        if (dashboardResponse.success) {
+          setDashboardData(dashboardResponse.data);
+        }
+        
+        if (leadActivityResponse.success) {
+          setLeadActivity(leadActivityResponse.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [setLabel, setTitle]);
+
+  // Calculate stats from lead activity data
+  const stats = leadActivity.length > 0 ? [
+    { 
+      label: "All", 
+      value: leadActivity.reduce((sum, day) => sum + day.leads, 0), 
+      color: "text-blue-600" 
+    },
+    { 
+      label: "New", 
+      value: leadActivity.reduce((sum, day) => sum + day.new, 0), 
+      color: "text-blue-400" 
+    },
+    { 
+      label: "Contacted", 
+      value: leadActivity.reduce((sum, day) => sum + day.contacted, 0), 
+      color: "text-yellow-500" 
+    },
+    { 
+      label: "Converted", 
+      value: leadActivity.reduce((sum, day) => sum + day.converted, 0), 
+      color: "text-green-600" 
+    },
+    { 
+      label: "Lost", 
+      value: leadActivity.reduce((sum, day) => sum + day.lost, 0), 
+      color: "text-red-500" 
+    },
+  ] : [
+    { label: "All", value: 0, color: "text-blue-600" },
+    { label: "New", value: 0, color: "text-blue-400" },
+    { label: "Contacted", value: 0, color: "text-yellow-500" },
+    { label: "Converted", value: 0, color: "text-green-600" },
+    { label: "Lost", value: 0, color: "text-red-500" },
+  ];
+
   return (
     <div className="w-full mx-auto space-y-8">
       {/* Status Cards for admin dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <StatusCard
           label="Total Clients"
-          value={"12"}
+          value={loading ? "..." : (dashboardData?.totalClients?.toString() || "0")}
           icon={<FaUsers />}
           color="gray"
         />
         <StatusCard
           label="Total Leads"
-          value={"45"}
+          value={loading ? "..." : (dashboardData?.totalLeads?.toString() || "0")}
           icon={<FaAddressBook />}
           color="green"
         />
         <StatusCard
           label="APIs Usage Today"
-          value={"320"}
+          value={loading ? "..." : (dashboardData?.apiUsageToday?.toString() || "0")}
           icon={<FaBolt />}
           color="yellow"
         />
         <StatusCard
           label="Total API Keys"
-          value={"10"}
+          value={loading ? "..." : (dashboardData?.totalApiKeys?.toString() || "0")}
           icon={<FaLayerGroup />}
           color="orange"
         />
         <StatusCard
           label="Active API Keys"
-          value={"7"}
+          value={loading ? "..." : (dashboardData?.activeApiKeys?.toString() || "0")}
           icon={<FaKey />}
           color="blue"
         />
         <StatusCard
           label="Revoked API Keys"
-          value={"3"}
+          value={loading ? "..." : (dashboardData?.revokedApiKeys?.toString() || "0")}
           icon={<FaBan />}
           color="red"
         />
       </div>
-      {/* Leads Overview Card (below) */}
       {/* Leads Overview Card (below) */}
       <div className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row gap-8">
         {/* Left: Chart */}
@@ -155,7 +154,7 @@ function DaschboardPage() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
-              data={leadsData}
+              data={loading ? [] : leadActivity}
               margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -190,7 +189,7 @@ function DaschboardPage() {
             <div key={stat.label} className="flex flex-col items-center py-2">
               <span className={`text-xs text-gray-400 mb-1`}>{stat.label}</span>
               <span className={`text-2xl font-bold ${stat.color}`}>
-                {stat.value.toString().padStart(2, "0")}
+                {loading ? "..." : stat.value.toString().padStart(2, "0")}
               </span>
             </div>
           ))}

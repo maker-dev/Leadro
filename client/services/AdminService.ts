@@ -36,6 +36,34 @@ export interface UpdateClientProfileParams {
   // add other optional fields if your backend supports them
 }
 
+export interface AdminDashboardData {
+  totalClients: number;
+  totalLeads: number;
+  apiUsageToday: number;
+  totalApiKeys: number;
+  activeApiKeys: number;
+  revokedApiKeys: number;
+}
+
+export interface AdminDashboardResponse {
+  success: boolean;
+  data: AdminDashboardData;
+}
+
+export interface AdminLeadActivityData {
+  day: string;
+  leads: number;
+  new: number;
+  contacted: number;
+  converted: number;
+  lost: number;
+}
+
+export interface AdminLeadActivityResponse {
+  success: boolean;
+  data: AdminLeadActivityData[];
+}
+
 export const getAllClients = async () => {
   const response = await axios.get("/users/admin/clients");
   return response.data;
@@ -70,5 +98,15 @@ export const updateClientProfile = async (
 
 export const deleteClient = async (userId: string) => {
   const response = await axios.delete(`/users/admin/clients/${userId}`);
+  return response.data;
+};
+
+export const getAdminDashboardData = async (): Promise<AdminDashboardResponse> => {
+  const response = await axios.get<AdminDashboardResponse>("/users/admin/dashboard");
+  return response.data;
+};
+
+export const getAdminLeadActivity = async (): Promise<AdminLeadActivityResponse> => {
+  const response = await axios.get<AdminLeadActivityResponse>("/users/admin/lead-activity");
   return response.data;
 };
