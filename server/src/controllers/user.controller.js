@@ -129,11 +129,15 @@ const getClientDashboardData = async (req, res) => {
     const totalLeads = leads.length;
     
     // Get leads shared with this client
-    const sharedLeads = await ClientAccess.find({ sharedWithId: userId })
-      .populate('ownerId', 'name email')
+    const sharedOwners = await ClientAccess.find({ sharedWithId: userId, status: "active" })
+      .select("ownerId")
       .lean();
     
-    const leadsSharedWithMe = sharedLeads.length;
+    const ownerIds = sharedOwners.map(s => s.ownerId);
+
+    const leadsSharedWithMe = await Lead.countDocuments({
+      ownerId: { $in: ownerIds }
+    });
     
     // Get leads entered today
     const today = new Date();
