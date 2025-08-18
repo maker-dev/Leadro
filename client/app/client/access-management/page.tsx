@@ -191,7 +191,7 @@ function AccessManagementPage() {
   const {
     register: editRegister,
     handleSubmit: handleEditFormSubmit,
-    formState: { errors: editErrors },
+    formState: { errors: editErrors, isSubmitting: isEditSubmitting },
     setValue: setEditValue,
     watch: editWatch,
     reset: editReset,
@@ -272,6 +272,7 @@ function AccessManagementPage() {
   const [clientToDelete, setClientToDelete] = useState<null | SharedAccess>(
     null
   );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ===================== Delete Modal Handlers =====================
   const handleOpenDeleteModal = (client: SharedAccess) => {
@@ -285,10 +286,13 @@ function AccessManagementPage() {
   };
 
   // ===================== Respond to Invitation Handlers =====================
+  const [respondingToInvitation, setRespondingToInvitation] = useState<{ id: string; action: "accept" | "reject" } | null>(null);
+
   const handleRespondToInvitation = async (
     client: SharedAccess,
     action: "accept" | "reject"
   ) => {
+    setRespondingToInvitation({ id: client.id, action });
     try {
       await respondToInvitation({
         id: client.id,
@@ -316,6 +320,8 @@ function AccessManagementPage() {
       } else {
         toast.error(`Failed to ${action} invitation. Please try again.`);
       }
+    } finally {
+      setRespondingToInvitation(null);
     }
   };
 
@@ -323,6 +329,7 @@ function AccessManagementPage() {
     if (!clientToDelete) return;
 
     try {
+      setIsDeleting(true);
       await deleteClientAccess(clientToDelete.id);
 
       toast.success("Client access removed successfully!");
@@ -347,6 +354,8 @@ function AccessManagementPage() {
       } else {
         toast.error("Failed to remove client access. Please try again.");
       }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -698,24 +707,44 @@ function AccessManagementPage() {
                         ) : (
                           <>
                             <button
-                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-green-400 text-green-600 font-semibold shadow hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400"
+                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-green-400 text-green-600 font-semibold shadow hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Accept"
                               onClick={() =>
                                 handleRespondToInvitation(client, "accept")
                               }
+                              disabled={respondingToInvitation?.id === client.id}
                             >
-                              <FiCheckCircle className="w-5 h-5" />
-                              Accept
+                              {respondingToInvitation?.id === client.id && respondingToInvitation?.action === "accept" ? (
+                                <>
+                                  <FiLoader className="w-5 h-5 animate-spin" />
+                                  Accepting...
+                                </>
+                              ) : (
+                                <>
+                                  <FiCheckCircle className="w-5 h-5" />
+                                  Accept
+                                </>
+                              )}
                             </button>
                             <button
-                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-red-300 text-red-500 font-semibold shadow hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
+                              className="flex items-center gap-2 px-4 py-2 rounded bg-white border border-red-300 text-red-500 font-semibold shadow hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                               aria-label="Reject"
                               onClick={() =>
                                 handleRespondToInvitation(client, "reject")
                               }
+                              disabled={respondingToInvitation?.id === client.id}
                             >
-                              <FiTrash2 className="w-5 h-5" />
-                              Reject
+                              {respondingToInvitation?.id === client.id && respondingToInvitation?.action === "reject" ? (
+                                <>
+                                  <FiLoader className="w-5 h-5 animate-spin" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                <>
+                                  <FiTrash2 className="w-5 h-5" />
+                                  Reject
+                                </>
+                              )}
                             </button>
                           </>
                         )}
@@ -796,11 +825,21 @@ function AccessManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-md font-semibold shadow hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/60 cursor-pointer"
+                  disabled={isEditSubmitting}
+                  className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-md font-semibold shadow hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black/60 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
                   aria-label="Save Permissions"
                 >
-                  <FiCheckCircle className="w-5 h-5" aria-hidden="true" />
-                  Save
+                  {isEditSubmitting ? (
+                    <>
+                      <FiLoader className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <FiCheckCircle className="w-5 h-5" aria-hidden="true" />
+                      Save
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -831,6 +870,7 @@ function AccessManagementPage() {
           onConfirm={handleConfirmDelete}
           title="Delete Client Access"
           description={`Are you sure you want to remove this access? This action cannot be undone.`}
+          loading={isDeleting}
         />
       )}
     </div>

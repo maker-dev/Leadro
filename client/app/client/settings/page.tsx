@@ -90,8 +90,10 @@ function SettingsPage() {
   };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
       await deleteAccount();
       await logout();
@@ -99,6 +101,7 @@ function SettingsPage() {
     } catch (error: any) {
       toast.error("Account deletion failed. Please try again.");
     } finally {
+      setIsDeleting(false);
       setShowDeleteModal(false);
     }
   };
@@ -123,6 +126,7 @@ function SettingsPage() {
           isOpen={true}
           title="Delete Account"
           description="Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost."
+          loading={isDeleting}
         />
       )}
     </div>

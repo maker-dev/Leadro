@@ -7,6 +7,7 @@ import NormalTextInput from "../../inputs/NormalTextInput";
 import FormValues from "./types/ChangePasswordType";
 import { FaSpinner } from "react-icons/fa";
 import BaseCard from "../BaseCard";
+import { toast } from "sonner";
 
 interface ChangePasswordProps {
   onSubmit?: (data: FormValues, setError: UseFormSetError<FormValues>) => void;
@@ -27,9 +28,13 @@ const ChangePassword: React.FC<ChangePasswordProps> = ({
     mode: "onBlur",
   });
 
-  const handleFormSubmit = (data: FormValues) => {
-    onSubmit(data, setError);
-    reset();
+  const handleFormSubmit = async (data: FormValues) => {
+    try {
+      await onSubmit(data, setError);
+      reset();
+    } catch (error) {
+      toast.error("Failed to update password. Please try again.");
+    }
   };
 
   return (

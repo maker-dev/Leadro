@@ -8,6 +8,7 @@ import { FiUser, FiShield, FiSave } from "react-icons/fi";
 import { RiUserSettingsLine } from "react-icons/ri";
 import { FaSpinner } from "react-icons/fa";
 import BaseCard from "../BaseCard";
+import { toast } from "sonner";
 
 interface ProfileInformationProps {
   initialValues: { name: string; email: string };
@@ -31,8 +32,12 @@ const ProfileInformation: React.FC<ProfileInformationProps> = ({
     mode: "onBlur",
   });
 
-  const handleFormSubmit = (data: FormValues) => {
-    onSubmit(data, setError);
+  const handleFormSubmit = async (data: FormValues) => {
+    try {
+      await onSubmit(data, setError);
+    } catch (error) {
+      toast.error("Failed to update profile. Please try again.");
+    }
   };
 
   return (
