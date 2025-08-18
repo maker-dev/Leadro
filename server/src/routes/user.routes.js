@@ -18,6 +18,8 @@ import {
   updateAdminClientProfile,
   deleteClientByAdmin,
   getClientViewData,
+  getClientDashboardData,
+  getClientLeadActivity,
 } from "../controllers/user.controller.js";
 import {
   ClientRegisterValidation,
@@ -256,6 +258,203 @@ router.post(
   ResendVerificationEmailValidation,
   validate,
   resendVerificationEmail
+);
+
+/**
+ * @swagger
+ * /api/users/client/dashboard:
+ *   get:
+ *     summary: Get client dashboard data
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieves dashboard statistics and data for the authenticated client user
+ *     responses:
+ *       200:
+ *         description: Client dashboard data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalLeads:
+ *                       type: integer
+ *                       description: Total number of leads owned by the current client
+ *                       example: 25
+ *                     leadsSharedWithMe:
+ *                       type: integer
+ *                       description: Number of leads shared with the current client by other users
+ *                       example: 3
+ *                     leadsEnteredToday:
+ *                       type: integer
+ *                       description: Number of leads created by the current client today
+ *                       example: 2
+ *                     lastApiKeyCreated:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       description: Date when the last API key was created (null if no API keys exist)
+ *                       example: "2024-01-15T10:30:00.000Z"
+ *                     lastLeadCreated:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       description: Date when the last lead was created (null if no leads exist)
+ *                       example: "2024-01-16T14:20:00.000Z"
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - client role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Access denied"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+router.get(
+  "/client/dashboard",
+  verifyToken,
+  verifyRole(["client"]),
+  getClientDashboardData
+);
+
+/**
+ * @swagger
+ * /api/users/client/lead-activity:
+ *   get:
+ *     summary: Get client lead activity for the last 7 days
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     description: Retrieves lead activity data for the authenticated client user over the last 7 days, including daily counts by status
+ *     responses:
+ *       200:
+ *         description: Lead activity data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   description: Array of 7 days with lead activity data
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       day:
+ *                         type: string
+ *                         description: Day of the week (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
+ *                         example: "Mon"
+ *                         enum: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+ *                       leads:
+ *                         type: integer
+ *                         description: Total number of leads for this day
+ *                         example: 3
+ *                         minimum: 0
+ *                       new:
+ *                         type: integer
+ *                         description: Number of leads with 'new' status for this day
+ *                         example: 2
+ *                         minimum: 0
+ *                       contacted:
+ *                         type: integer
+ *                         description: Number of leads with 'contacted' status for this day
+ *                         example: 1
+ *                         minimum: 0
+ *                       converted:
+ *                         type: integer
+ *                         description: Number of leads with 'converted' status for this day
+ *                         example: 0
+ *                         minimum: 0
+ *                       lost:
+ *                         type: integer
+ *                         description: Number of leads with 'lost' status for this day
+ *                         example: 0
+ *                         minimum: 0
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - client role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Access denied"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+router.get(
+  "/client/lead-activity",
+  verifyToken,
+  verifyRole(["client"]),
+  getClientLeadActivity
 );
 
 /**

@@ -411,6 +411,147 @@ const getClientViewData = async (req, res) => {
   }
 };
 
+const getClientDashboardData = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Get leads summary for the current client
+    const leads = await Lead.find({ ownerId: userId });
+    const totalLeads = leads.length;
+    
+    // Get leads shared with this client
+    const sharedLeads = await ClientAccess.find({ sharedWithId: userId })
+      .populate('ownerId', 'name email')
+      .lean();
+    
+    const leadsSharedWithMe = sharedLeads.length;
+    
+    // Get leads entered today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const leadsEnteredToday = await Lead.countDocuments({
+      ownerId: userId,
+      createdAt: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    });
+    
+    // Get last API key created
+    const lastApiKey = await ApiKey.findOne({ clientId: userId })
+      .sort({ createdAt: -1 })
+      .select('createdAt')
+      .lean();
+    
+    const lastApiKeyCreated = lastApiKey ? lastApiKey.createdAt : null;
+    
+    // Get last lead created
+    const lastLead = await Lead.findOne({ ownerId: userId })
+      .sort({ createdAt: -1 })
+      .select('createdAt')
+      .lean();
+    
+    const lastLeadCreated = lastLead ? lastLead.createdAt : null;
+
+    // Format the response
+    const dashboardData = {
+      totalLeads,
+      leadsSharedWithMe,
+      leadsEnteredToday,
+      lastApiKeyCreated,
+      lastLeadCreated,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: dashboardData,
+    });
+  } catch (error) {
+    console.error("Get client dashboard data error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const getClientLeadActivity = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Get leads for the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const leads = await Lead.find({
+      ownerId: userId,
+      createdAt: { $gte: sevenDaysAgo }
+    }).sort({ createdAt: 1 });
+    
+    // Group leads by day
+    const activityByDay = {};
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Initialize all 7 days with 0 values
+    for (let i = 0; i < 7; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      const dayKey = days[date.getDay()];
+      activityByDay[dayKey] = {
+        day: dayKey,
+        leads: 0,
+        new: 0,
+        contacted: 0,
+        converted: 0,
+        lost: 0
+      };
+    }
+    
+    // Fill in actual data
+    leads.forEach(lead => {
+      const leadDate = new Date(lead.createdAt);
+      const dayKey = days[leadDate.getDay()];
+      
+      if (activityByDay[dayKey]) {
+        activityByDay[dayKey].leads += 1;
+        
+        // Count by status
+        switch (lead.status) {
+          case 'new':
+            activityByDay[dayKey].new += 1;
+            break;
+          case 'contacted':
+            activityByDay[dayKey].contacted += 1;
+            break;
+          case 'converted':
+            activityByDay[dayKey].converted += 1;
+            break;
+          case 'lost':
+            activityByDay[dayKey].lost += 1;
+            break;
+        }
+      }
+    });
+    
+    // Convert to array format
+    const leadActivity = Object.values(activityByDay);
+    
+    res.status(200).json({
+      success: true,
+      data: leadActivity
+    });
+  } catch (error) {
+    console.error("Get client lead activity error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 //Hybrid APIS
 
 const login = async (req, res) => {
@@ -620,9 +761,11 @@ export {
   updateAdminClientProfile,
   deleteClientByAdmin,
   getClientViewData,
+  getClientDashboardData,
   clientVerifyEmail,
   resendVerificationEmail,
   logout,
   changeName,
   deleteAccount,
+  getClientLeadActivity,
 };

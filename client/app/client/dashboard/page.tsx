@@ -1,7 +1,7 @@
 "use client";
 import StatusCard from "@/components/ui/cards/StatusCard";
 import { usePageContext } from "@/context/PageTitleContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FaAddressBook,
   FaShareAlt,
@@ -19,82 +19,96 @@ import {
   CartesianGrid,
 } from "recharts";
 import LeadTooltip from "@/components/tooltip/LeadToolTip";
-
-// Mock data for the last 7 days
-const leadsData = [
-  {
-    day: "Mon",
-    leads: 111,
-    new: 50,
-    contacted: 35,
-    converted: 20,
-    lost: 6,
-  },
-  {
-    day: "Tue",
-    leads: 18,
-    new: 8,
-    contacted: 5,
-    converted: 4,
-    lost: 1,
-  },
-  {
-    day: "Wed",
-    leads: 9,
-    new: 4,
-    contacted: 3,
-    converted: 1,
-    lost: 1,
-  },
-  {
-    day: "Thu",
-    leads: 22,
-    new: 10,
-    contacted: 7,
-    converted: 3,
-    lost: 2,
-  },
-  {
-    day: "Fri",
-    leads: 15,
-    new: 6,
-    contacted: 5,
-    converted: 3,
-    lost: 1,
-  },
-  {
-    day: "Sat",
-    leads: 17,
-    new: 7,
-    contacted: 6,
-    converted: 3,
-    lost: 1,
-  },
-  {
-    day: "Sun",
-    leads: 20,
-    new: 9,
-    contacted: 6,
-    converted: 4,
-    lost: 1,
-  },
-];
-
-// Mock stats
-const stats = [
-  { label: "All", value: 45, color: "text-blue-600" },
-  { label: "New", value: 20, color: "text-blue-400" },
-  { label: "Contacted", value: 15, color: "text-yellow-500" },
-  { label: "Converted", value: 7, color: "text-green-600" },
-  { label: "Lost", value: 3, color: "text-red-500" },
-];
+import { getDashboardData, ClientDashboardData, getLeadActivity, LeadActivityData } from "@/services/ClientService";
 
 function DaschboardPage() {
   const { setLabel, setTitle } = usePageContext();
+  
+  // ===================== Dashboard Data State =====================
+  const [dashboardData, setDashboardData] = useState<ClientDashboardData | null>(null);
+  const [leadActivity, setLeadActivity] = useState<LeadActivityData[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     setLabel("Overview");
     setTitle("Overview");
+    
+    // Fetch dashboard data and lead activity
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch both dashboard data and lead activity in parallel
+        const [dashboardResponse, leadActivityResponse] = await Promise.all([
+          getDashboardData(),
+          getLeadActivity()
+        ]);
+        
+        if (dashboardResponse.success) {
+          setDashboardData(dashboardResponse.data);
+        }
+        
+        if (leadActivityResponse.success) {
+          setLeadActivity(leadActivityResponse.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [setLabel, setTitle]);
+
+  // Helper function to format dates
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return "—";
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // getMonth() returns 0-11
+      const day = date.getDate();
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "—";
+    }
+  };
+
+  // Calculate stats from lead activity data
+  const stats = leadActivity.length > 0 ? [
+    { 
+      label: "All", 
+      value: leadActivity.reduce((sum, day) => sum + day.leads, 0), 
+      color: "text-blue-600" 
+    },
+    { 
+      label: "New", 
+      value: leadActivity.reduce((sum, day) => sum + day.new, 0), 
+      color: "text-blue-400" 
+    },
+    { 
+      label: "Contacted", 
+      value: leadActivity.reduce((sum, day) => sum + day.contacted, 0), 
+      color: "text-yellow-500" 
+    },
+    { 
+      label: "Converted", 
+      value: leadActivity.reduce((sum, day) => sum + day.converted, 0), 
+      color: "text-green-600" 
+    },
+    { 
+      label: "Lost", 
+      value: leadActivity.reduce((sum, day) => sum + day.lost, 0), 
+      color: "text-red-500" 
+    },
+  ] : [
+    { label: "All", value: 0, color: "text-blue-600" },
+    { label: "New", value: 0, color: "text-blue-400" },
+    { label: "Contacted", value: 0, color: "text-yellow-500" },
+    { label: "Converted", value: 0, color: "text-green-600" },
+    { label: "Lost", value: 0, color: "text-red-500" },
+  ];
 
   return (
     <div className="w-full mx-auto space-y-8">
@@ -102,31 +116,31 @@ function DaschboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <StatusCard
           label="Total Leads"
-          value={"100"}
+          value={loading ? "..." : (dashboardData?.totalLeads?.toString() || "0")}
           icon={<FaAddressBook />}
           color="blue"
         />
         <StatusCard
           label="Leads Shared With Me"
-          value={"8"}
+          value={loading ? "..." : (dashboardData?.leadsSharedWithMe?.toString() || "0")}
           icon={<FaShareAlt />}
           color="orange"
         />
         <StatusCard
           label="Leads Entered Today"
-          value={"4"}
+          value={loading ? "..." : (dashboardData?.leadsEnteredToday?.toString() || "0")}
           icon={<FaCalendarDay />}
           color="green"
         />
         <StatusCard
           label="Last API Key Created"
-          value={"11-02-2003"}
+          value={loading ? "..." : formatDate(dashboardData?.lastApiKeyCreated || null)}
           icon={<FaKey />}
           color="gray"
         />
         <StatusCard
           label="Last Lead Created"
-          value={"10-20-2002"}
+          value={loading ? "..." : formatDate(dashboardData?.lastLeadCreated || null)}
           icon={<FaUserPlus />}
           color="gray"
         />
@@ -147,7 +161,7 @@ function DaschboardPage() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
-              data={leadsData}
+              data={loading ? [] : leadActivity}
               margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -182,7 +196,7 @@ function DaschboardPage() {
             <div key={stat.label} className="flex flex-col items-center py-2">
               <span className={`text-xs text-gray-400 mb-1`}>{stat.label}</span>
               <span className={`text-2xl font-bold ${stat.color}`}>
-                {stat.value.toString().padStart(2, "0")}
+                {loading ? "..." : stat.value.toString().padStart(2, "0")}
               </span>
             </div>
           ))}
