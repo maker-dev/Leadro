@@ -298,7 +298,7 @@ const ApiKeysPage = () => {
         <p className="text-gray-500 mb-8">
           Manage your API keys for secure lead access.
         </p>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-hidden">
           <table
             className="min-w-full text-left"
             aria-label="Client API Keys Table"

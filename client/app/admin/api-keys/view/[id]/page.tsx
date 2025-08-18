@@ -237,7 +237,7 @@ const ViewKeysPage = () => {
         title="Client API Keys"
         description="Manage API keys for the selected client."
       >
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-hidden">
           <table
             className="min-w-full text-left"
             aria-label="Client API Keys Table"
