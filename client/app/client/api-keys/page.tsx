@@ -16,7 +16,7 @@ import EditKeyType from "./types/EditKeyType";
 import FormModal from "@/components/modals/FormModal";
 import { GoKey } from "react-icons/go";
 import { FiKey } from "react-icons/fi";
-import { FiCopy, FiCheck, FiTrash2, FiEdit, FiPlus } from "react-icons/fi";
+import { FiCopy, FiCheck, FiTrash2, FiEdit, FiPlus, FiDownload } from "react-icons/fi";
 import { toast } from "sonner";
 import {
   getApiKeySummaryForClient,
@@ -46,6 +46,7 @@ const ApiKeysPage = () => {
   // ===================== Delete Modal State =====================
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // ===================== Generate API Key Modal State =====================
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -90,6 +91,7 @@ const ApiKeysPage = () => {
 
   const handleConfirmDelete = async () => {
     if (!keyToDelete) return;
+    setDeleteLoading(true);
     try {
       const res = await deleteApiKey(keyToDelete);
       if (res.success) {
@@ -117,6 +119,8 @@ const ApiKeysPage = () => {
         toast.error("Failed to delete API key. Please try again.");
       }
       handleCloseDeleteModal();
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -286,14 +290,27 @@ const ApiKeysPage = () => {
             </div>
             <h2 className="text-xl sm:text-2xl font-bold">Client API Keys</h2>
           </div>
-          <button
-            className="flex items-center gap-2 bg-black text-white font-medium rounded-lg px-3 py-3 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition text-base w-full md:w-auto mt-2 md:mt-0"
-            tabIndex={0}
-            aria-label="Generate New API Key"
-            onClick={handleOpenCreateModal}
-          >
-            <FiPlus className="w-5 h-5" /> Generate New API Key
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+            <button
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white font-medium rounded-lg px-3 py-3 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/60 transition text-base"
+              tabIndex={0}
+              aria-label="Download API Key Usage Guide"
+              onClick={() => {
+                // TODO: Implement PDF download functionality
+                toast.info("PDF download feature coming soon!");
+              }}
+            >
+              <FiDownload className="w-4 h-4" /> Guide
+            </button>
+            <button
+              className="flex items-center justify-center gap-2 bg-black text-white font-medium rounded-lg px-3 py-3 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black/60 transition text-base"
+              tabIndex={0}
+              aria-label="Generate New API Key"
+              onClick={handleOpenCreateModal}
+            >
+              <FiPlus className="w-5 h-5" /> Generate New API Key
+            </button>
+          </div>
         </div>
         <p className="text-gray-500 mb-8">
           Manage your API keys for secure lead access.
@@ -426,6 +443,7 @@ const ApiKeysPage = () => {
           description="Are you sure you want to delete this API key? This action cannot be undone."
           confirmLabel="Delete"
           cancelLabel="Cancel"
+          loading={deleteLoading}
         />
       )}
 
