@@ -8,6 +8,7 @@ import {
   IoIosKey,
   IoIosSettings,
   IoIosLock,
+  IoIosCreate,
 } from "react-icons/io";
 import { LuLogOut } from "react-icons/lu";
 import { useAuth } from "@/context/AuthContext";
@@ -45,6 +46,11 @@ const clientNavItems = [
     label: "Overview",
     icon: <IoIosHome className="w-5 h-5 text-white" />,
     href: "/client/dashboard",
+  },
+  {
+    label: "Campaigns",
+    icon: <IoIosCreate className="w-5 h-5 text-white" />,
+    href: "/client/campaigns",
   },
   {
     label: "Leads",
@@ -103,8 +109,8 @@ const SideBar: React.FC<SideBarProps> = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         } transform transition-transform duration-300 lg:translate-x-0 lg:static`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-6 mb-10 mt-10">
+                 {/* Logo */}
+         <div className="flex items-center gap-2 px-6 py-4 mb-8 mt-8">
           <svg
             width="32"
             height="32"
@@ -122,8 +128,8 @@ const SideBar: React.FC<SideBarProps> = ({
             Identify Leads
           </span>
         </div>
-        {/* Navigation */}
-        <nav className="flex-1 px-2 space-y-1">
+                 {/* Navigation */}
+         <nav className="flex-1 px-2 space-y-1.5">
           {navItems.map((item) => (
             <React.Fragment key={item.label}>
               {/* Divider before Settings */}
@@ -135,7 +141,7 @@ const SideBar: React.FC<SideBarProps> = ({
                 onClick={onClose}
                 tabIndex={0}
                 aria-label={item.label}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-white/70 transition-colors cursor-pointer text-base
+                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-white/70 transition-colors cursor-pointer text-sm
                 ${
                   activeLabel === item.label
                     ? "bg-white/20"
@@ -150,8 +156,8 @@ const SideBar: React.FC<SideBarProps> = ({
             </React.Fragment>
           ))}
         </nav>
-        {/* Logout Button*/}
-        <div className="mt-8 mb-6 px-6">
+                 {/* Logout Button*/}
+         <div className="mt-6 mb-6 px-6">
           <button
             className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/70 transition-colors cursor-pointer"
             aria-label="Logout"
