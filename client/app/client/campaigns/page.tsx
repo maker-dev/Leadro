@@ -1,9 +1,17 @@
 "use client";
 import { usePageContext } from "@/context/PageTitleContext";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FaPlus, FaTrash, FaCog, FaChevronUp, FaChevronDown, FaEllipsisV } from "react-icons/fa";
 import NormalTextInput from "@/components/ui/inputs/NormalTextInput";
 import NormalTextAreaInput from "@/components/ui/inputs/NormalTextAreaInput";
+import CreateCampaignSchema from "./schemas/CreateCampaignSchema";
+import EditCampaignSchema from "./schemas/EditCampaignSchema";
+import CampaignFieldSchema from "./schemas/CampaignFieldSchema";
+import CreateCampaignType from "./types/CreateCampaignType";
+import EditCampaignType from "./types/EditCampaignType";
+import CampaignFieldType from "./types/CampaignFieldType";
 
 interface Campaign {
   id: string;
@@ -38,6 +46,44 @@ const CampaignsPage = () => {
     options: "",
   });
 
+  // ===================== Create Campaign Form (react-hook-form) =====================
+  const {
+    register: createRegister,
+    handleSubmit: handleCreateSubmit,
+    formState: { errors: createErrors, isSubmitting: isCreateSubmitting },
+    reset: createReset,
+  } = useForm<CreateCampaignType>({
+    resolver: zodResolver(CreateCampaignSchema),
+    defaultValues: { title: "", description: "" },
+    mode: "onBlur",
+  });
+
+  // ===================== Edit Campaign Form (react-hook-form) =====================
+  const {
+    register: editRegister,
+    handleSubmit: handleEditSubmit,
+    formState: { errors: editErrors, isSubmitting: isEditSubmitting },
+    reset: editReset,
+  } = useForm<EditCampaignType>({
+    resolver: zodResolver(EditCampaignSchema),
+    defaultValues: { title: "", description: "" },
+    mode: "onBlur",
+  });
+
+  // ===================== Campaign Field Form (react-hook-form) =====================
+  const {
+    register: fieldRegister,
+    handleSubmit: handleFieldSubmit,
+    formState: { errors: fieldErrors, isSubmitting: isFieldSubmitting },
+    reset: fieldReset,
+    watch: fieldWatch,
+    setValue: fieldSetValue,
+  } = useForm<CampaignFieldType>({
+    resolver: zodResolver(CampaignFieldSchema),
+    defaultValues: { label: "New Field", type: "Text Input", required: false, options: "" },
+    mode: "onBlur",
+  });
+
   useEffect(() => {
     setLabel("Campaigns");
     setTitle("Campaigns");
@@ -47,21 +93,25 @@ const CampaignsPage = () => {
     if (selectedCampaign) {
       setEditingTitle(selectedCampaign.title);
       setEditingDescription(selectedCampaign.description);
+      // Sync edit form with selected campaign
+      editReset({
+        title: selectedCampaign.title,
+        description: selectedCampaign.description,
+      });
     }
-  }, [selectedCampaign]);
+  }, [selectedCampaign, editReset]);
 
-  const createCampaign = () => {
-    if (!newCampaignTitle.trim()) return;
-
+  const onCreateSubmit = (data: CreateCampaignType) => {
     const newCampaign: Campaign = {
       id: Date.now().toString(),
-      title: newCampaignTitle,
-      description: newCampaignDescription,
+      title: data.title,
+      description: data.description,
       fields: [],
     };
 
     setCampaigns([...campaigns, newCampaign]);
     setSelectedCampaign(newCampaign);
+    createReset();
     setNewCampaignTitle("");
     setNewCampaignDescription("");
   };
@@ -75,22 +125,30 @@ const CampaignsPage = () => {
     }
   };
 
-  const updateCampaign = () => {
+  const onEditSubmit = (data: EditCampaignType) => {
     if (!selectedCampaign) return;
 
     const updatedCampaign = {
       ...selectedCampaign,
-      title: editingTitle,
-      description: editingDescription,
+      title: data.title,
+      description: data.description,
     };
 
     setCampaigns(campaigns.map(c => c.id === selectedCampaign.id ? updatedCampaign : c));
     setSelectedCampaign(updatedCampaign);
+    setEditingTitle(data.title);
+    setEditingDescription(data.description);
   };
 
   const addField = () => {
     setShowFieldForm(true);
     setEditingFieldId(null);
+    fieldReset({
+      label: "New Field",
+      type: "Text Input",
+      required: false,
+      options: "",
+    });
     setNewField({
       label: "New Field",
       type: "Text Input",
@@ -102,6 +160,12 @@ const CampaignsPage = () => {
   const editField = (field: CampaignField) => {
     setShowFieldForm(true);
     setEditingFieldId(field.id);
+    fieldReset({
+      label: field.label,
+      type: field.type,
+      required: field.required,
+      options: field.options || "",
+    });
     setNewField({
       label: field.label,
       type: field.type,
@@ -110,14 +174,14 @@ const CampaignsPage = () => {
     });
   };
 
-  const saveField = () => {
-    if (!selectedCampaign || !newField.label.trim()) return;
+  const onFieldSubmit = (data: CampaignFieldType) => {
+    if (!selectedCampaign) return;
 
     if (editingFieldId) {
       // Update existing field
       const updatedFields = selectedCampaign.fields.map(field => 
         field.id === editingFieldId 
-          ? { ...field, ...newField }
+          ? { ...field, ...data }
           : field
       );
       
@@ -132,7 +196,7 @@ const CampaignsPage = () => {
       // Create new field
       const fieldToAdd: CampaignField = {
         id: Date.now().toString(),
-        ...newField,
+        ...data,
       };
 
       const updatedCampaign = {
@@ -146,11 +210,13 @@ const CampaignsPage = () => {
 
     setShowFieldForm(false);
     setEditingFieldId(null);
+    fieldReset();
   };
 
   const cancelField = () => {
     setShowFieldForm(false);
     setEditingFieldId(null);
+    fieldReset();
     setNewField({
       label: "New Field",
       type: "Text Input",
@@ -217,32 +283,41 @@ const CampaignsPage = () => {
               </p>
             </div>
             
-            <div className="space-y-4">
+            <form onSubmit={handleCreateSubmit(onCreateSubmit)}>
               <NormalTextInput
                 label="Campaign Title"
                 placeholder="Enter campaign title"
-                name="campaignTitle"
-                value={newCampaignTitle}
-                onChange={(e) => setNewCampaignTitle(e.target.value)}
+                required
+                {...createRegister("title")}
+                error={createErrors.title}
               />
               
               <NormalTextAreaInput
                 label="Description"
                 placeholder="Describe your campaign"
-                name="description"
-                value={newCampaignDescription}
-                onChange={(e) => setNewCampaignDescription(e.target.value)}
+                required
+                {...createRegister("description")}
+                error={createErrors.description}
               />
               
               <button 
-                onClick={createCampaign}
-                disabled={!newCampaignTitle.trim()}
-                className="w-full bg-gray-800 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                type="submit"
+                disabled={isCreateSubmitting}
+                className="w-full mt-2 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
-                <FaPlus className="text-sm" />
-                Create Campaign
+                {isCreateSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <FaPlus className="text-sm" />
+                    Create Campaign
+                  </>
+                )}
               </button>
-            </div>
+            </form>
           </div>
 
           {/* Your Campaigns Panel */}
@@ -315,28 +390,36 @@ const CampaignsPage = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-6">Campaign Details</h3>
                 
-                <div className="space-y-4 mb-6">
+                <form onSubmit={handleEditSubmit(onEditSubmit)} className="mb-6">
                   <NormalTextInput
                     label="Campaign Title"
-                    name="editingTitle"
-                    value={editingTitle}
-                    onChange={(e) => setEditingTitle(e.target.value)}
+                    required
+                    {...editRegister("title")}
+                    error={editErrors.title}
                   />
                   
                   <NormalTextAreaInput
                     label="Campaign Description"
-                    name="editingDescription"
-                    value={editingDescription}
-                    onChange={(e) => setEditingDescription(e.target.value)}
+                    required
+                    {...editRegister("description")}
+                    error={editErrors.description}
                   />
                   
                   <button
-                    onClick={updateCampaign}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    type="submit"
+                    disabled={isEditSubmitting}
+                    className="bg-blue-600 mt-2 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                   >
-                    Update Campaign
+                    {isEditSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Campaign'
+                    )}
                   </button>
-                </div>
+                </form>
 
                 {/* Field Form */}
                 {showFieldForm && (
@@ -345,7 +428,7 @@ const CampaignsPage = () => {
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col items-center gap-1">
                             <FaChevronUp className="w-3 h-3 text-gray-400" />
                             <FaEllipsisV className="w-3 h-3 text-gray-400" />
                             <FaChevronDown className="w-3 h-3 text-gray-400" />
@@ -360,9 +443,9 @@ const CampaignsPage = () => {
                     </div>
 
                     {/* Field Configuration Card */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                    <form onSubmit={handleFieldSubmit(onFieldSubmit)} className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col items-center gap-1">
                           <FaChevronUp className="w-3 h-3 text-gray-400" />
                           <FaEllipsisV className="w-3 h-3 text-gray-400" />
                           <FaChevronDown className="w-3 h-3 text-gray-400" />
@@ -374,9 +457,10 @@ const CampaignsPage = () => {
                             <label className="text-sm font-medium text-gray-700">Field Type</label>
                             <div className="flex items-center gap-3">
                               <select
-                                value={newField.type}
-                                onChange={(e) => setNewField({...newField, type: e.target.value})}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                {...fieldRegister("type")}
+                                className={`px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                                  fieldErrors.type ? 'border-red-500' : 'border-gray-300'
+                                }`}
                               >
                                 {fieldTypes.map((type) => (
                                   <option key={type} value={type}>{type}</option>
@@ -385,12 +469,10 @@ const CampaignsPage = () => {
                               <div className="flex items-center gap-2">
                                 <input
                                   type="checkbox"
-                                  id="required"
-                                  checked={newField.required}
-                                  onChange={(e) => setNewField({...newField, required: e.target.checked})}
+                                  {...fieldRegister("required")}
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <label htmlFor="required" className="text-sm text-gray-700">Required Field</label>
+                                <label className="text-sm text-gray-700">Required Field</label>
                               </div>
                             </div>
                           </div>
@@ -400,49 +482,70 @@ const CampaignsPage = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Field Label</label>
                             <input
                               type="text"
-                              value={newField.label}
-                              onChange={(e) => setNewField({...newField, label: e.target.value})}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                               placeholder="Enter field label"
+                              {...fieldRegister("label")}
+                              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
+                                fieldErrors.label ? 'border-red-500' : 'border-gray-400'
+                              }`}
                             />
+                            <p
+                              className={`text-xs mt-1 min-h-[8px] ${
+                                fieldErrors.label ? 'text-red-500 visible' : 'invisible'
+                              }`}
+                            >
+                              {fieldErrors.label?.message || 'placeholder'}
+                            </p>
                           </div>
 
                           {/* Field Options - Only for checkbox, dropdown, and radio */}
-                          {(newField.type === "Checkbox" || newField.type === "Dropdown" || newField.type === "Radio Buttons") && (
+                          {(fieldWatch("type") === "Checkbox" || fieldWatch("type") === "Dropdown" || fieldWatch("type") === "Radio Buttons") && (
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Field Options</label>
                               <textarea
-                                value={newField.options || ""}
-                                onChange={(e) => setNewField({...newField, options: e.target.value})}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
                                 placeholder="Enter options, one per line&#10;Example:&#10;Option 1&#10;Option 2&#10;Option 3"
                                 rows={4}
+                                {...fieldRegister("options")}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none ${
+                                  fieldErrors.options ? 'border-red-500' : 'border-gray-300'
+                                }`}
                               />
-                              <p className="text-xs text-gray-500 mt-1">
-                                Enter each option on a new line
-                              </p>
+                              {fieldErrors.options ? (
+                                <p className="text-xs text-red-500 mt-1">{fieldErrors.options.message}</p>
+                              ) : (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Enter each option on a new line
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-3 pt-2">
+                      <div className="flex items-center gap-3">
                         <button
-                          onClick={saveField}
-                          disabled={!newField.label.trim()}
+                          type="submit"
+                          disabled={isFieldSubmitting}
                           className="bg-gray-800 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                         >
-                          {editingFieldId ? 'Update Field' : 'Done'}
+                          {isFieldSubmitting ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              {editingFieldId ? 'Updating...' : 'Creating...'}
+                            </>
+                          ) : (
+                            editingFieldId ? 'Update Field' : 'Done'
+                          )}
                         </button>
                         <button
+                          type="button"
                           onClick={cancelField}
                           className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <FaTrash className="w-4 h-4" />
                         </button>
                       </div>
-                    </div>
+                    </form>
                   </div>
                 )}
 
@@ -466,7 +569,7 @@ const CampaignsPage = () => {
                         <div key={field.id} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col items-center gap-1">
                                 <button
                                   onClick={() => moveField(field.id, 'up')}
                                   disabled={index === 0}
