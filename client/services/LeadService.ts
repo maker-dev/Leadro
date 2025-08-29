@@ -178,3 +178,45 @@ export const createLeadForClient = async (data: CreateLeadForClientPayload) => {
   const response = await axios.post("/leads/admin/clients", data);
   return response.data;
 };
+
+// Export filtered client leads as Excel (returns Blob and suggested filename)
+export const exportClientLeads = async (
+  params: GetLeadsParams = {}
+): Promise<{ blob: Blob; filename: string }> => {
+  const response = await axios.get("/leads/client/export", {
+    params,
+    responseType: "blob",
+  });
+  const disposition = (response.headers as any)["content-disposition"] as
+    | string
+    | undefined;
+  let filename = "leads_client.xlsx";
+  if (disposition) {
+    const match = /filename(?:\*=UTF-8'')?=([^;]+)/i.exec(disposition);
+    if (match && match[1]) {
+      filename = decodeURIComponent(match[1].replace(/"/g, "").trim());
+    }
+  }
+  return { blob: response.data as Blob, filename };
+};
+
+// Export filtered admin leads as Excel (returns Blob and suggested filename)
+export const exportAdminLeads = async (
+  params: GetAdminLeadsParams = {}
+): Promise<{ blob: Blob; filename: string }> => {
+  const response = await axios.get("/leads/admin/clients/export", {
+    params,
+    responseType: "blob",
+  });
+  const disposition = (response.headers as any)["content-disposition"] as
+    | string
+    | undefined;
+  let filename = "leads_admin.xlsx";
+  if (disposition) {
+    const match = /filename(?:\*=UTF-8'')?=([^;]+)/i.exec(disposition);
+    if (match && match[1]) {
+      filename = decodeURIComponent(match[1].replace(/"/g, "").trim());
+    }
+  }
+  return { blob: response.data as Blob, filename };
+};

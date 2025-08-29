@@ -11,6 +11,8 @@ import {
   getAdminLeadById,
   createLeadFromWebhook,
   getLeadById,
+  exportClientLeads,
+  exportAdminLeads,
 } from "../controllers/lead.controller.js";
 import verifyToken from "../middlewares/verifyToken.js";
 import verifyRole from "../middlewares/verifyRole.js";
@@ -357,6 +359,78 @@ router.get(
   GetClientLeadsValidation,
   validate,
   getClientLeads
+);
+
+/**
+ * @swagger
+ * /api/leads/client/export:
+ *   get:
+ *     summary: Export filtered leads for the authenticated client as Excel
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *         description: Search term for name, email, or phone
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [all, new, contacted, converted, lost]
+ *           default: all
+ *         description: Filter by lead status
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 50
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: owner
+ *         schema:
+ *           type: string
+ *           enum: [me, anyone]
+ *           default: anyone
+ *         description: Filter by ownership (me = owned by user, anyone = owned + shared)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive start date (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive end date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Excel file containing filtered leads. Includes dynamic custom fields as columns prefixed with "Custom: <key>".
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Client access required
+ *       500:
+ *         description: Server error
+ */
+// Export client leads (filtered) as Excel
+router.get(
+  "/client/export",
+  verifyToken,
+  verifyRole(["client"]),
+  exportClientLeads
 );
 
 /**
@@ -779,6 +853,71 @@ router.get(
   GetAllClientsLeadsValidation,
   validate,
   getAllClientsLeads
+);
+
+/**
+ * @swagger
+ * /api/leads/admin/clients/export:
+ *   get:
+ *     summary: Export filtered leads across all clients as Excel (Admin only)
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *         description: Search term for lead name, email, phone, or client name
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [all, new, contacted, converted, lost]
+ *           default: all
+ *         description: Filter by lead status
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 50
+ *         description: Filter by lead source
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive start date (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive end date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Excel file containing filtered leads across clients. Includes dynamic custom fields as columns prefixed with "Custom: <key>".
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
+// Export admin leads (filtered) as Excel
+router.get(
+  "/admin/clients/export",
+  verifyToken,
+  verifyRole(["admin"]),
+  exportAdminLeads
 );
 
 /**

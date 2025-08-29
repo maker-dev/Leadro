@@ -2,6 +2,7 @@ import Lead from "../models/Lead.js";
 import ClientAccess from "../models/ClientAccess.js";
 import User from "../models/User.js";
 import ApiKey from "../models/ApiKey.js";
+import ExcelJS from "exceljs";
 /* CLIENT API */
 
 // Create new lead
@@ -725,6 +726,275 @@ const deleteAdminLead = async (req, res) => {
   }
 };
 
+// Export filtered leads for client as Excel
+const exportClientLeads = async (req, res) => {
+  try {
+    const { search, status, source, startDate, endDate, owner = "anyone" } = req.query;
+
+    const query = {};
+
+    // Owner filtering (owned or shared with read permission and active)
+    if (owner === "me") {
+      query.ownerId = req.user.userId;
+    } else {
+      const sharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        permissions: { $in: ["read"] },
+        status: "active",
+      });
+      const sharedOwnerIds = sharedAccesses.map((access) => access.ownerId);
+      query.$or = [{ ownerId: req.user.userId }, { ownerId: { $in: sharedOwnerIds } }];
+    }
+
+    // Search
+    if (search) {
+      const searchQuery = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+        ],
+      };
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, searchQuery];
+        delete query.$or;
+      } else {
+        Object.assign(query, searchQuery);
+      }
+    }
+
+    if (status && status !== "all") {
+      query.status = status;
+    }
+    if (source && source !== "all") {
+      query.source = source;
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = start;
+        }
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+    }
+
+    const leads = await Lead.find(query).sort({ createdAt: -1 }).lean();
+
+    // Determine ownership and permissions for client context
+    const sharedLeadOwnerIds = leads
+      .filter((lead) => lead.ownerId.toString() !== req.user.userId)
+      .map((lead) => lead.ownerId);
+
+    let permissionsMap = new Map();
+    if (sharedLeadOwnerIds.length > 0) {
+      const relevantSharedAccesses = await ClientAccess.find({
+        sharedWithId: req.user.userId,
+        ownerId: { $in: sharedLeadOwnerIds },
+        status: "active",
+      });
+      permissionsMap = new Map(
+        relevantSharedAccesses.map((access) => [access.ownerId.toString(), access.permissions])
+      );
+    }
+
+    const leadsWithOwner = leads.map((lead) => {
+      const isOwned = lead.ownerId.toString() === req.user.userId;
+      return {
+        ...lead,
+        owner: isOwned ? "me" : "shared",
+        permissions: isOwned ? ["read", "update", "delete"] : permissionsMap.get(lead.ownerId.toString()) || [],
+      };
+    });
+
+    // Prepare Excel with dynamic custom fields (extraFields/customField)
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Leads");
+
+    // Collect unique custom field keys across all leads
+    const customFieldKeysSet = new Set();
+    for (const lead of leadsWithOwner) {
+      const mapLike = lead.extraFields || lead.customField || {};
+      if (mapLike instanceof Map) {
+        for (const k of mapLike.keys()) customFieldKeysSet.add(String(k));
+      } else if (mapLike && typeof mapLike === "object") {
+        for (const k of Object.keys(mapLike)) customFieldKeysSet.add(String(k));
+      }
+    }
+    const customFieldKeys = Array.from(customFieldKeysSet).sort();
+
+    const baseColumns = [
+      { header: "Name", key: "name", width: 22 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Phone", key: "phone", width: 18 },
+      { header: "Source", key: "source", width: 16 },
+      { header: "Status", key: "status", width: 14 },
+      { header: "Message", key: "message", width: 40 },
+      { header: "Owner", key: "owner", width: 10 },
+      { header: "Created At", key: "createdAt", width: 24 },
+    ];
+    const customColumns = customFieldKeys.map((key) => ({ header: `Custom: ${key}`, key, width: 24 }));
+    worksheet.columns = [...baseColumns, ...customColumns];
+
+    leadsWithOwner.forEach((lead) => {
+      const row = {
+        name: lead.name || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        source: lead.source || "",
+        status: lead.status || "",
+        message: lead.message || "",
+        owner: lead.owner,
+        createdAt: lead.createdAt ? new Date(lead.createdAt).toISOString() : "",
+      };
+      const mapLike = lead.extraFields || lead.customField || {};
+      const getVal = (obj, k) => {
+        const v = obj instanceof Map ? obj.get(k) : obj?.[k];
+        if (v === null || v === undefined) return "";
+        if (typeof v === "object") return JSON.stringify(v);
+        return String(v);
+      };
+      for (const key of customFieldKeys) {
+        row[key] = getVal(mapLike, key);
+      }
+      worksheet.addRow(row);
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=leads_client.xlsx");
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Export client leads error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// Export filtered leads for admin as Excel
+const exportAdminLeads = async (req, res) => {
+  try {
+    const { search, status, source, startDate, endDate } = req.query;
+
+    const query = {};
+    if (status && status !== "all") {
+      query.status = status;
+    }
+    if (source && source !== "all") {
+      query.source = source;
+    }
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = start;
+        }
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+    }
+
+    let leads = await Lead.find(query)
+      .populate("ownerId", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (search) {
+      leads = leads.filter((lead) => {
+        const searchLower = search.toLowerCase();
+        const leadName = (lead.name || "").toLowerCase();
+        const leadEmail = (lead.email || "").toLowerCase();
+        const leadPhone = (lead.phone || "").toLowerCase();
+        const clientName = (lead.ownerId?.name || "").toLowerCase();
+        return (
+          leadName.includes(searchLower) ||
+          leadEmail.includes(searchLower) ||
+          leadPhone.includes(searchLower) ||
+          clientName.includes(searchLower)
+        );
+      });
+    }
+
+    // Prepare Excel with dynamic custom fields (extraFields/customField)
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Leads");
+
+    // Collect unique custom field keys across all leads
+    const customFieldKeysSet = new Set();
+    for (const lead of leads) {
+      const mapLike = lead.extraFields || lead.customField || {};
+      if (mapLike instanceof Map) {
+        for (const k of mapLike.keys()) customFieldKeysSet.add(String(k));
+      } else if (mapLike && typeof mapLike === "object") {
+        for (const k of Object.keys(mapLike)) customFieldKeysSet.add(String(k));
+      }
+    }
+    const customFieldKeys = Array.from(customFieldKeysSet).sort();
+
+    const baseColumns = [
+      { header: "Client Name", key: "clientName", width: 22 },
+      { header: "Client Email", key: "clientEmail", width: 26 },
+      { header: "Name", key: "name", width: 22 },
+      { header: "Email", key: "email", width: 28 },
+      { header: "Phone", key: "phone", width: 18 },
+      { header: "Source", key: "source", width: 16 },
+      { header: "Status", key: "status", width: 14 },
+      { header: "Message", key: "message", width: 40 },
+      { header: "Created At", key: "createdAt", width: 24 },
+    ];
+    const customColumns = customFieldKeys.map((key) => ({ header: `Custom: ${key}`, key, width: 24 }));
+    worksheet.columns = [...baseColumns, ...customColumns];
+
+    leads.forEach((lead) => {
+      const row = {
+        clientName: lead.ownerId?.name || "",
+        clientEmail: lead.ownerId?.email || "",
+        name: lead.name || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        source: lead.source || "",
+        status: lead.status || "",
+        message: lead.message || "",
+        createdAt: lead.createdAt ? new Date(lead.createdAt).toISOString() : "",
+      };
+      const mapLike = lead.extraFields || lead.customField || {};
+      const getVal = (obj, k) => {
+        const v = obj instanceof Map ? obj.get(k) : obj?.[k];
+        if (v === null || v === undefined) return "";
+        if (typeof v === "object") return JSON.stringify(v);
+        return String(v);
+      };
+      for (const key of customFieldKeys) {
+        row[key] = getVal(mapLike, key);
+      }
+      worksheet.addRow(row);
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=leads_admin.xlsx");
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Export admin leads error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 /* PUBLIC API */
 
 // Create lead via public API
@@ -785,4 +1055,6 @@ export {
   createLeadForClient,
   deleteAdminLead,
   createLeadFromWebhook,
+  exportClientLeads,
+  exportAdminLeads,
 };

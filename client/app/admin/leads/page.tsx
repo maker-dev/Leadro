@@ -21,6 +21,7 @@ import {
   AdminLead,
   deleteAdminLead,
 } from "@/services/LeadService";
+import { exportAdminLeads } from "@/services/LeadService";
 import { toast } from "sonner";
 import formatDate from "@/utils/formateDate";
 import getSourceLabel from "@/utils/getSourceLabel";
@@ -95,6 +96,7 @@ const Leads = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   //pagination state
   const [page, setPage] = useState(1);
@@ -200,8 +202,33 @@ const Leads = () => {
   const handleDownloadClick = () => {
     setIsDownloadModalOpen(true);
   };
-  const handleConfirmDownload = () => {
-    setIsDownloadModalOpen(false);
+  const handleConfirmDownload = async () => {
+    try {
+      setDownloading(true);
+      const params = {
+        search: appliedFilters.search || undefined,
+        status: appliedFilters.status !== "all" ? appliedFilters.status : undefined,
+        source: appliedFilters.source !== "all" ? appliedFilters.source : undefined,
+        startDate: appliedFilters.startDate?.toISOString(),
+        endDate: appliedFilters.endDate?.toISOString(),
+      } as any;
+
+      const { blob, filename } = await exportAdminLeads(params);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "leads_admin.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Leads export started");
+      setIsDownloadModalOpen(false);
+    } catch (err) {
+      toast.error("Failed to export leads");
+    } finally {
+      setDownloading(false);
+    }
   };
   const handleCancelDownload = () => {
     setIsDownloadModalOpen(false);
@@ -544,6 +571,7 @@ const Leads = () => {
         description="Are you sure you want to download the selected leads?"
         confirmLabel="Download"
         cancelLabel="Cancel"
+        loading={downloading}
       />
     </div>
   );
