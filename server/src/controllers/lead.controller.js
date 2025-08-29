@@ -107,14 +107,22 @@ const getClientLeads = async (req, res) => {
       query.source = source;
     }
 
-    // Add date range filter if provided
+    // Add inclusive date range filter if provided (normalize to full days)
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
+        const start = new Date(startDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = start;
+        }
       }
       if (endDate) {
-        query.createdAt.$lte = new Date(endDate);
+        const end = new Date(endDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
       }
     }
 
@@ -469,14 +477,22 @@ const getAllClientsLeads = async (req, res) => {
       query.source = source;
     }
 
-    // Add date range filter if provided
+    // Add inclusive date range filter if provided (normalize to full days)
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
+        const start = new Date(startDate);
+        if (!isNaN(start.getTime())) {
+          start.setHours(0, 0, 0, 0);
+          query.createdAt.$gte = start;
+        }
       }
       if (endDate) {
-        query.createdAt.$lte = new Date(endDate);
+        const end = new Date(endDate);
+        if (!isNaN(end.getTime())) {
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
       }
     }
 
