@@ -520,8 +520,8 @@ const getClientViewData = async (req, res) => {
       }
     }
 
-    // Get client access (users who have access to this client)
-    const clientAccess = await ClientAccess.find({ ownerId: userId })
+    // Get client access (users who have access to this client) - only active
+    const clientAccess = await ClientAccess.find({ ownerId: userId, status: "active" })
       .populate('sharedWithId', 'name email')
       .lean();
 
