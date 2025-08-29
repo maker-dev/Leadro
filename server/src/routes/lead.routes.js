@@ -412,7 +412,7 @@ router.get(
  *         description: Inclusive end date (YYYY-MM-DD)
  *     responses:
  *       200:
- *         description: Excel file containing filtered leads. Includes dynamic custom fields as columns prefixed with "Custom: <key>".
+ *         description: 'Excel file containing filtered leads. Includes dynamic custom fields as columns prefixed with "Custom: <key>".'
  *         content:
  *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
  *             schema:
@@ -899,7 +899,7 @@ router.get(
  *         description: Inclusive end date (YYYY-MM-DD)
  *     responses:
  *       200:
- *         description: Excel file containing filtered leads across clients. Includes dynamic custom fields as columns prefixed with "Custom: <key>".
+ *         description: 'Excel file containing filtered leads across clients. Includes dynamic custom fields as columns prefixed with "Custom: <key>".'
  *         content:
  *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
  *             schema:
