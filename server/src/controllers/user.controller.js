@@ -204,53 +204,60 @@ const getClientLeadActivity = async (req, res) => {
       createdAt: { $gte: sevenDaysAgo }
     }).sort({ createdAt: 1 });
     
-    // Group leads by day
-    const activityByDay = {};
+    // Helper to get a stable YYYY-MM-DD key
+    const toDateKey = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Initialize last 7 calendar days with zero values
+    const activityByDate = {};
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    // Initialize all 7 days with 0 values
-    for (let i = 0; i < 7; i++) {
+    for (let i = 6; i >= 0; i--) {
       const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      const dayKey = days[date.getDay()];
-      activityByDay[dayKey] = {
-        day: dayKey,
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - i);
+      const key = toDateKey(date);
+      activityByDate[key] = {
+        day: days[date.getDay()],
         leads: 0,
         new: 0,
         contacted: 0,
         converted: 0,
-        lost: 0
+        lost: 0,
       };
     }
-    
-    // Fill in actual data
-    leads.forEach(lead => {
+
+    // Fill in actual data per calendar date
+    for (const lead of leads) {
       const leadDate = new Date(lead.createdAt);
-      const dayKey = days[leadDate.getDay()];
-      
-      if (activityByDay[dayKey]) {
-        activityByDay[dayKey].leads += 1;
-        
-        // Count by status
-        switch (lead.status) {
-          case 'new':
-            activityByDay[dayKey].new += 1;
-            break;
-          case 'contacted':
-            activityByDay[dayKey].contacted += 1;
-            break;
-          case 'converted':
-            activityByDay[dayKey].converted += 1;
-            break;
-          case 'lost':
-            activityByDay[dayKey].lost += 1;
-            break;
-        }
+      leadDate.setHours(0, 0, 0, 0);
+      const key = toDateKey(leadDate);
+      if (!activityByDate[key]) continue; // Outside initialized 7-day window
+
+      activityByDate[key].leads += 1;
+      switch (lead.status) {
+        case 'new':
+          activityByDate[key].new += 1;
+          break;
+        case 'contacted':
+          activityByDate[key].contacted += 1;
+          break;
+        case 'converted':
+          activityByDate[key].converted += 1;
+          break;
+        case 'lost':
+          activityByDate[key].lost += 1;
+          break;
       }
-    });
-    
-    // Convert to array format
-    const leadActivity = Object.values(activityByDay);
+    }
+
+    // Convert to chronologically ordered array
+    const leadActivity = Object.keys(activityByDate)
+      .sort()
+      .map((k) => activityByDate[k]);
     
     res.status(200).json({
       success: true,
@@ -566,53 +573,60 @@ const getAdminLeadActivity = async (req, res) => {
       createdAt: { $gte: sevenDaysAgo }
     }).sort({ createdAt: 1 });
     
-    // Group leads by day
-    const activityByDay = {};
+    // Helper to get a stable YYYY-MM-DD key
+    const toDateKey = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Initialize last 7 calendar days with zero values
+    const activityByDate = {};
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    // Initialize all 7 days with 0 values
-    for (let i = 0; i < 7; i++) {
+    for (let i = 6; i >= 0; i--) {
       const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      const dayKey = days[date.getDay()];
-      activityByDay[dayKey] = {
-        day: dayKey,
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - i);
+      const key = toDateKey(date);
+      activityByDate[key] = {
+        day: days[date.getDay()],
         leads: 0,
         new: 0,
         contacted: 0,
         converted: 0,
-        lost: 0
+        lost: 0,
       };
     }
-    
-    // Fill in actual data
-    leads.forEach(lead => {
+
+    // Fill in actual data per calendar date
+    for (const lead of leads) {
       const leadDate = new Date(lead.createdAt);
-      const dayKey = days[leadDate.getDay()];
-      
-      if (activityByDay[dayKey]) {
-        activityByDay[dayKey].leads += 1;
-        
-        // Count by status
-        switch (lead.status) {
-          case 'new':
-            activityByDay[dayKey].new += 1;
-            break;
-          case 'contacted':
-            activityByDay[dayKey].contacted += 1;
-            break;
-          case 'converted':
-            activityByDay[dayKey].converted += 1;
-            break;
-          case 'lost':
-            activityByDay[dayKey].lost += 1;
-            break;
-        }
+      leadDate.setHours(0, 0, 0, 0);
+      const key = toDateKey(leadDate);
+      if (!activityByDate[key]) continue;
+
+      activityByDate[key].leads += 1;
+      switch (lead.status) {
+        case 'new':
+          activityByDate[key].new += 1;
+          break;
+        case 'contacted':
+          activityByDate[key].contacted += 1;
+          break;
+        case 'converted':
+          activityByDate[key].converted += 1;
+          break;
+        case 'lost':
+          activityByDate[key].lost += 1;
+          break;
       }
-    });
-    
-    // Convert to array format
-    const leadActivity = Object.values(activityByDay);
+    }
+
+    // Convert to chronologically ordered array
+    const leadActivity = Object.keys(activityByDate)
+      .sort()
+      .map((k) => activityByDate[k]);
     
     res.status(200).json({
       success: true,
