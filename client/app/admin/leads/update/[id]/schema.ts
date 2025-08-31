@@ -27,14 +27,9 @@ export const updateLeadFormSchema = z
     phone: z
       .string()
       .optional()
-      .refine(
-        (val) =>
-          !val ||
-          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(val),
-        {
-          message: "Please provide a valid phone number",
-        }
-      ),
+      .refine((val) => !val || /^\+[1-9]\d{0,3}[-\s.]?\d{2,14}$/.test(val), {
+        message: "Please provide a valid phone number",
+      }),
     source: z
       .enum(LeadSourceValues)
       .or(z.literal(""))

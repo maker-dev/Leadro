@@ -27,7 +27,7 @@ const CreateLeadValidation = [
   body("phone")
     .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .matches(/^\+[1-9]\d{0,3}[-\s.]?\d{2,14}$/)
     .withMessage("Please provide a valid phone number"),
 
   body("source")
@@ -182,7 +182,7 @@ const UpdateLeadBodyValidation = [
   body("phone")
     .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .matches(/^\+[1-9]\d{0,3}[-\s.]?\d{2,14}$/)
     .withMessage("Please provide a valid phone number"),
   body("source")
     .optional()
@@ -351,7 +351,7 @@ const CreateLeadForClientValidation = [
   body("phone")
     .optional()
     .trim()
-    .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
+    .matches(/^\+[1-9]\d{0,3}[-\s.]?\d{2,14}$/)
     .withMessage("Please provide a valid phone number"),
 
   body("source")
